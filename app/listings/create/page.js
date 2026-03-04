@@ -26,6 +26,7 @@ export default function CreateListingPage() {
     city: '',
     address: '',
     images: '',
+    video: '',
   });
   const [errors, setErrors] = useState({});
 
@@ -70,6 +71,17 @@ export default function CreateListingPage() {
     try {
       const images = formData.images ? formData.images.split(',').map(url => url.trim()).filter(url => url) : [];
       
+      // Valider le nombre d'images
+      if (images.length > 5) {
+        toast({
+          title: 'Trop d\'images',
+          description: 'Maximum 5 photos autorisées',
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      }
+      
       const response = await fetch('/api/listings', {
         method: 'POST',
         headers: {
@@ -80,6 +92,7 @@ export default function CreateListingPage() {
           ...formData,
           price: parseFloat(formData.price),
           images,
+          video: formData.video || '',
         }),
       });
 
@@ -267,7 +280,7 @@ export default function CreateListingPage() {
               </div>
 
               <div>
-                <Label htmlFor="images">Images (URLs séparées par des virgules)</Label>
+                <Label htmlFor="images">Images (Maximum 5 photos)</Label>
                 <Textarea
                   id="images"
                   name="images"
@@ -277,7 +290,28 @@ export default function CreateListingPage() {
                   rows={3}
                 />
                 <p className="text-sm text-gray-500 mt-1">
-                  Entrez les URLs des images séparées par des virgules
+                  Entrez jusqu'à 5 URLs d'images séparées par des virgules. Photos de haute qualité requises.
+                </p>
+                {formData.images && formData.images.split(',').filter(url => url.trim()).length > 5 && (
+                  <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-4 h-4" />
+                    Maximum 5 photos autorisées
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="video">Vidéo (Optionnel - 1 maximum)</Label>
+                <Input
+                  id="video"
+                  name="video"
+                  placeholder="https://example.com/video.mp4"
+                  value={formData.video || ''}
+                  onChange={handleChange}
+                  className="border-gray-300 focus:border-kama-blue"
+                />
+                <p className="text-sm text-gray-500 mt-1">
+                  URL d'une vidéo de présentation du bien (format MP4 recommandé, max 100MB)
                 </p>
               </div>
 

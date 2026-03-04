@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Search, Home, Car, MapPin, Heart, User, LogOut, PlusCircle, Shield, Menu, X, TrendingUp, CheckCircle, Star, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Toaster } from '@/components/ui/toaster';
+import { NotificationBell } from '@/components/NotificationBell';
 
 export default function App() {
   const router = useRouter();
@@ -110,6 +111,7 @@ export default function App() {
                       Publier
                     </Button>
                   </Link>
+                  <NotificationBell />
                   <Link href="/favorites" className="text-gray-700 hover:text-red-500 transition">
                     <Heart className="w-6 h-6" />
                   </Link>
