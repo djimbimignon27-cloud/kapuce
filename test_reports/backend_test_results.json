@@ -1,0 +1,114 @@
+[
+  {
+    "test": "Root Endpoint",
+    "success": true,
+    "critical": false,
+    "details": "Basic connectivity works",
+    "timestamp": "2026-03-04T02:05:38.244939"
+  },
+  {
+    "test": "User Registration",
+    "success": false,
+    "critical": true,
+    "details": "Status: 409, Response: {\"error\":\"Cet email est d\u00e9j\u00e0 utilis\u00e9\"}",
+    "timestamp": "2026-03-04T02:05:38.410236"
+  },
+  {
+    "test": "User Login",
+    "success": true,
+    "critical": false,
+    "details": "Login successful",
+    "timestamp": "2026-03-04T02:05:38.954504"
+  },
+  {
+    "test": "Admin Registration",
+    "success": false,
+    "critical": false,
+    "details": "Status: 409, Response: {\"error\":\"Cet email est d\u00e9j\u00e0 utilis\u00e9\"}",
+    "timestamp": "2026-03-04T02:05:39.089726"
+  },
+  {
+    "test": "Admin Login",
+    "success": true,
+    "critical": false,
+    "details": "Admin login successful",
+    "timestamp": "2026-03-04T02:05:39.520715"
+  },
+  {
+    "test": "Create Listing",
+    "success": true,
+    "critical": true,
+    "details": "Listing created successfully",
+    "timestamp": "2026-03-04T02:05:39.655950"
+  },
+  {
+    "test": "Get All Listings",
+    "success": true,
+    "critical": true,
+    "details": "Retrieved 2 listings",
+    "timestamp": "2026-03-04T02:05:39.783032"
+  },
+  {
+    "test": "Get Listing by ID",
+    "success": true,
+    "critical": false,
+    "details": "Retrieved listing details",
+    "timestamp": "2026-03-04T02:05:40.514194"
+  },
+  {
+    "test": "Search Listings",
+    "success": true,
+    "critical": true,
+    "details": "Search returned 3 results",
+    "timestamp": "2026-03-04T02:05:40.817139"
+  },
+  {
+    "test": "Create Transaction",
+    "success": false,
+    "critical": false,
+    "details": "Status: 400, Response: {\"error\":\"Cette annonce n'est plus disponible\"}",
+    "timestamp": "2026-03-04T02:05:41.086505"
+  },
+  {
+    "test": "Get My Transactions",
+    "success": true,
+    "critical": false,
+    "details": "Retrieved 1 transactions",
+    "timestamp": "2026-03-04T02:05:41.303016"
+  },
+  {
+    "test": "Reviews Tests Skipped",
+    "success": false,
+    "critical": false,
+    "details": "Missing auth token or user ID",
+    "timestamp": "2026-03-04T02:05:41.304860"
+  },
+  {
+    "test": "Add to Favorites",
+    "success": true,
+    "critical": false,
+    "details": "Added to favorites successfully",
+    "timestamp": "2026-03-04T02:05:41.588106"
+  },
+  {
+    "test": "Get My Favorites",
+    "success": true,
+    "critical": false,
+    "details": "Retrieved 1 favorites",
+    "timestamp": "2026-03-04T02:05:41.734717"
+  },
+  {
+    "test": "Admin Dashboard",
+    "success": true,
+    "critical": false,
+    "details": "Dashboard data retrieved successfully",
+    "timestamp": "2026-03-04T02:05:41.982717"
+  },
+  {
+    "test": "Approve Listing",
+    "success": false,
+    "critical": false,
+    "details": "Status: 404, Response: {\"error\":\"Route /admin/listings/69a793735905b5bf6bc1c4d1 not found\"}",
+    "timestamp": "2026-03-04T02:05:43.149469"
+  }
+]
