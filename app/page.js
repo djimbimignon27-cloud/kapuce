@@ -135,7 +135,7 @@ export default function App() {
                       Connexion
                     </Button>
                   </Link>
-                  <Link href="/auth/register">
+                  <Link href="/auth/choose-account">
                     <Button className="bg-gradient-to-r from-kama-blue to-blue-600 hover:from-kama-blue/90 hover:to-blue-600/90 text-white shadow-lg hover:shadow-xl transition-all">
                       Inscription
                     </Button>
@@ -181,7 +181,7 @@ export default function App() {
                   <Link href="/auth/login" className="block py-2 text-gray-700 hover:text-kama-gold transition">
                     Connexion
                   </Link>
-                  <Link href="/auth/register" className="block py-2 text-kama-blue font-semibold">
+                  <Link href="/auth/choose-account" className="block py-2 text-kama-blue font-semibold">
                     Inscription
                   </Link>
                 </>

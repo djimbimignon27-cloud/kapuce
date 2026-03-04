@@ -1,30 +1,45 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Mail, Lock, User, Phone, AlertCircle, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Mail, Lock, User, Phone, AlertCircle, ArrowLeft, CheckCircle, Shield, Home, Building2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Toaster } from '@/components/ui/toaster';
 
 export default function RegisterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [accountType, setAccountType] = useState('USER');
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     phone: '',
     password: '',
     confirmPassword: '',
-    role: 'USER',
+    acceptTerms: false,
   });
   const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    const type = searchParams.get('type');
+    if (type && ['USER', 'OWNER', 'AGENCY'].includes(type)) {
+      setAccountType(type);
+    }
+  }, [searchParams]);
+
+  const accountTypeInfo = {
+    USER: { icon: User, title: 'Utilisateur', color: 'blue' },
+    OWNER: { icon: Home, title: 'Propriétaire', color: 'kama-gold' },
+    AGENCY: { icon: Building2, title: 'Agence', color: 'kama-blue' },
+  };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -43,6 +58,7 @@ export default function RegisterPage() {
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Les mots de passe ne correspondent pas';
     }
+    if (!formData.acceptTerms) newErrors.acceptTerms = 'Vous devez accepter les conditions';
     return newErrors;
   };
 
@@ -64,7 +80,7 @@ export default function RegisterPage() {
           email: formData.email,
           phone: formData.phone,
           password: formData.password,
-          role: formData.role,
+          role: accountType,
         }),
       });
       const data = await response.json();
@@ -73,11 +89,15 @@ export default function RegisterPage() {
         localStorage.setItem('accessToken', data.accessToken);
         localStorage.setItem('refreshToken', data.refreshToken);
         localStorage.setItem('user', JSON.stringify(data.user));
+        
         toast({
-          title: 'Inscription réussie!',
-          description: 'Bienvenue sur KAMA!',
+          title: 'Inscription réussie! 🎉',
+          description: 'Un email de vérification vous a été envoyé',
         });
-        setTimeout(() => router.push('/dashboard'), 2000);
+        
+        setTimeout(() => {
+          router.push('/dashboard');
+        }, 2000);
       } else {
         toast({
           title: 'Erreur d\'inscription',
@@ -96,6 +116,8 @@ export default function RegisterPage() {
     }
   };
 
+  const AccountIcon = accountTypeInfo[accountType].icon;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-kama-blue via-blue-700 to-kama-blue flex items-center justify-center p-4 relative overflow-hidden">
       <Toaster />
@@ -109,15 +131,15 @@ export default function RegisterPage() {
 
       <div className="relative w-full max-w-xl animate-in fade-in slide-in-from-bottom duration-700">
         {/* Back Button */}
-        <Link href="/">
+        <Link href="/auth/choose-account">
           <Button variant="ghost" className="mb-4 text-white hover:text-kama-gold hover:bg-white/10">
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Retour à l'accueil
+            Choisir un autre type de compte
           </Button>
         </Link>
 
         <Card className="backdrop-blur-lg bg-white/95 shadow-2xl border-0">
-          <CardHeader className="text-center pb-6">
+          <CardHeader className="text-center pb-6 border-b border-gray-100">
             <div className="flex justify-center mb-6">
               <img 
                 src="https://customer-assets.emergentagent.com/job_trusted-transactions/artifacts/edwa4pun_IMG-20260221-WA0185.jpg" 
@@ -125,34 +147,71 @@ export default function RegisterPage() {
                 className="h-16 w-auto"
               />
             </div>
+            
+            {/* Account Type Badge */}
+            <div className="flex justify-center mb-4">
+              <div className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-kama-gold/10 to-yellow-100 rounded-full border-2 border-kama-gold/20">
+                <div className="p-2 bg-gradient-to-r from-kama-gold to-yellow-600 rounded-lg">
+                  <AccountIcon className="w-5 h-5 text-white" />
+                </div>
+                <span className="font-bold text-gray-900">
+                  Compte {accountTypeInfo[accountType].title}
+                </span>
+              </div>
+            </div>
+
             <CardTitle className="text-3xl font-bold bg-gradient-to-r from-kama-blue to-blue-600 bg-clip-text text-transparent">
-              Rejoignez KAMA
+              Créez votre compte
             </CardTitle>
             <CardDescription className="text-base mt-2">
-              Créez votre compte en quelques secondes et accédez à des milliers d'annonces
+              Inscrivez-vous en quelques secondes
             </CardDescription>
           </CardHeader>
           
-          <CardContent className="px-8 pb-8">
-            <form onSubmit={handleSubmit} className="space-y-4">
+          <CardContent className="px-8 pb-8 pt-6">
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Full Name */}
+              <div className="space-y-2">
+                <Label htmlFor="fullName" className="text-gray-700 font-medium flex items-center gap-2">
+                  <User className="w-4 h-4 text-kama-blue" />
+                  Nom complet
+                </Label>
+                <Input
+                  id="fullName"
+                  name="fullName"
+                  placeholder="Jean Dupont"
+                  value={formData.fullName}
+                  onChange={handleChange}
+                  className={`h-12 ${errors.fullName ? 'border-red-500' : 'border-gray-300 focus:border-kama-blue'}`}
+                />
+                {errors.fullName && (
+                  <p className="text-red-500 text-xs flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    {errors.fullName}
+                  </p>
+                )}
+              </div>
+
+              {/* Email and Phone */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="fullName" className="text-gray-700 font-medium flex items-center gap-2">
-                    <User className="w-4 h-4 text-kama-blue" />
-                    Nom complet
+                  <Label htmlFor="email" className="text-gray-700 font-medium flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-kama-blue" />
+                    Email
                   </Label>
                   <Input
-                    id="fullName"
-                    name="fullName"
-                    placeholder="Jean Dupont"
-                    value={formData.fullName}
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="exemple@email.com"
+                    value={formData.email}
                     onChange={handleChange}
-                    className={`h-11 ${errors.fullName ? 'border-red-500' : 'border-gray-300 focus:border-kama-blue'}`}
+                    className={`h-12 ${errors.email ? 'border-red-500' : 'border-gray-300 focus:border-kama-blue'}`}
                   />
-                  {errors.fullName && (
+                  {errors.email && (
                     <p className="text-red-500 text-xs flex items-center gap-1">
                       <AlertCircle className="w-3 h-3" />
-                      {errors.fullName}
+                      {errors.email}
                     </p>
                   )}
                 </div>
@@ -169,7 +228,7 @@ export default function RegisterPage() {
                     placeholder="+241 XX XX XX XX"
                     value={formData.phone}
                     onChange={handleChange}
-                    className={`h-11 ${errors.phone ? 'border-red-500' : 'border-gray-300 focus:border-kama-blue'}`}
+                    className={`h-12 ${errors.phone ? 'border-red-500' : 'border-gray-300 focus:border-kama-blue'}`}
                   />
                   {errors.phone && (
                     <p className="text-red-500 text-xs flex items-center gap-1">
@@ -180,51 +239,7 @@ export default function RegisterPage() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-gray-700 font-medium flex items-center gap-2">
-                  <Mail className="w-4 h-4 text-kama-blue" />
-                  Adresse email
-                </Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="exemple@email.com"
-                  value={formData.email}
-                  onChange={handleChange}
-                  className={`h-11 ${errors.email ? 'border-red-500' : 'border-gray-300 focus:border-kama-blue'}`}
-                />
-                {errors.email && (
-                  <p className="text-red-500 text-xs flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {errors.email}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="role" className="text-gray-700 font-medium">Type de compte</Label>
-                <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
-                  <SelectTrigger className="h-11">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="USER">
-                      <div className="flex items-center gap-2">
-                        <User className="w-4 h-4" />
-                        <span>Utilisateur</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="OWNER">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4" />
-                        <span>Propriétaire/Vendeur</span>
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
+              {/* Passwords */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="password" className="text-gray-700 font-medium flex items-center gap-2">
@@ -238,7 +253,7 @@ export default function RegisterPage() {
                     placeholder="Min. 6 caractères"
                     value={formData.password}
                     onChange={handleChange}
-                    className={`h-11 ${errors.password ? 'border-red-500' : 'border-gray-300 focus:border-kama-blue'}`}
+                    className={`h-12 ${errors.password ? 'border-red-500' : 'border-gray-300 focus:border-kama-blue'}`}
                   />
                   {errors.password && (
                     <p className="text-red-500 text-xs flex items-center gap-1">
@@ -257,10 +272,10 @@ export default function RegisterPage() {
                     id="confirmPassword"
                     name="confirmPassword"
                     type="password"
-                    placeholder="Retaper le mot de passe"
+                    placeholder="Retaper"
                     value={formData.confirmPassword}
                     onChange={handleChange}
-                    className={`h-11 ${errors.confirmPassword ? 'border-red-500' : 'border-gray-300 focus:border-kama-blue'}`}
+                    className={`h-12 ${errors.confirmPassword ? 'border-red-500' : 'border-gray-300 focus:border-kama-blue'}`}
                   />
                   {errors.confirmPassword && (
                     <p className="text-red-500 text-xs flex items-center gap-1">
@@ -271,9 +286,39 @@ export default function RegisterPage() {
                 </div>
               </div>
 
+              {/* Terms Checkbox */}
+              <div className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <Checkbox
+                  id="acceptTerms"
+                  checked={formData.acceptTerms}
+                  onCheckedChange={(checked) => {
+                    setFormData({ ...formData, acceptTerms: checked });
+                    if (errors.acceptTerms) setErrors({ ...errors, acceptTerms: '' });
+                  }}
+                  className="mt-1"
+                />
+                <Label htmlFor="acceptTerms" className="text-sm text-gray-700 leading-relaxed cursor-pointer">
+                  J'accepte les{' '}
+                  <Link href="/terms" className="text-kama-blue font-semibold hover:underline">
+                    conditions générales d'utilisation
+                  </Link>{' '}
+                  et la{' '}
+                  <Link href="/privacy" className="text-kama-blue font-semibold hover:underline">
+                    politique de confidentialité
+                  </Link>
+                </Label>
+              </div>
+              {errors.acceptTerms && (
+                <p className="text-red-500 text-sm flex items-center gap-1 -mt-2">
+                  <AlertCircle className="w-4 h-4" />
+                  {errors.acceptTerms}
+                </p>
+              )}
+
+              {/* Submit Button */}
               <Button
                 type="submit"
-                className="w-full h-12 bg-gradient-to-r from-kama-gold to-yellow-600 hover:from-kama-gold/90 hover:to-yellow-600/90 text-white shadow-lg hover:shadow-xl transition-all text-base font-semibold mt-6"
+                className="w-full h-14 bg-gradient-to-r from-kama-gold to-yellow-600 hover:from-kama-gold/90 hover:to-yellow-600/90 text-white shadow-lg hover:shadow-xl transition-all text-base font-bold"
                 disabled={loading}
               >
                 {loading ? (
@@ -282,7 +327,10 @@ export default function RegisterPage() {
                     Création en cours...
                   </div>
                 ) : (
-                  'Créer mon compte'
+                  <>
+                    <Shield className="w-5 h-5 mr-2" />
+                    Créer mon compte
+                  </>
                 )}
               </Button>
             </form>
@@ -299,17 +347,23 @@ export default function RegisterPage() {
         </Card>
 
         {/* Trust Indicators */}
-        <div className="mt-8 flex items-center justify-center gap-6 text-white/80 text-sm">
-          <div className="flex items-center gap-2">
-            <CheckCircle className="w-4 h-4 text-green-400" />
+        <div className="mt-8 grid grid-cols-3 gap-4 text-center text-white/90 text-sm">
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+              <CheckCircle className="w-6 h-6 text-green-400" />
+            </div>
             <span>Inscription gratuite</span>
           </div>
-          <div className="flex items-center gap-2">
-            <CheckCircle className="w-4 h-4 text-blue-400" />
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+              <Shield className="w-6 h-6 text-blue-400" />
+            </div>
             <span>100% sécurisé</span>
           </div>
-          <div className="flex items-center gap-2">
-            <CheckCircle className="w-4 h-4 text-kama-gold" />
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+              <CheckCircle className="w-6 h-6 text-kama-gold" />
+            </div>
             <span>Accès immédiat</span>
           </div>
         </div>
