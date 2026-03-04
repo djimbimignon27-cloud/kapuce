@@ -113,27 +113,32 @@ export default function CreateListingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       <Toaster />
-      <div className="bg-kama-blue text-white py-8">
-        <div className="container mx-auto px-4">
+      
+      {/* Enhanced Header */}
+      <div className="relative bg-gradient-to-br from-kama-blue via-blue-700 to-kama-blue overflow-hidden">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-0 left-0 w-96 h-96 bg-kama-gold rounded-full filter blur-3xl animate-pulse"></div>
+        </div>
+        <div className="relative container mx-auto px-4 py-12">
           <Link href="/dashboard">
-            <Button variant="ghost" size="sm" className="text-white hover:text-kama-gold mb-4">
+            <Button variant="ghost" size="sm" className="text-white hover:text-kama-gold hover:bg-white/10 mb-6">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Retour
             </Button>
           </Link>
-          <h1 className="text-3xl font-bold">Publier une annonce</h1>
-          <p className="text-gray-200 mt-2">Partagez votre bien en toute sécurité</p>
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-3">Publier une annonce</h1>
+          <p className="text-blue-100 text-lg">Partagez votre bien en toute sécurité</p>
         </div>
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        <Card className="max-w-3xl mx-auto">
-          <CardHeader>
-            <CardTitle>Informations de l'annonce</CardTitle>
-            <CardDescription>
-              Remplissez tous les champs pour créer votre annonce
+        <Card className="max-w-3xl mx-auto shadow-xl border-0">
+          <CardHeader className="bg-gradient-to-r from-kama-blue/5 to-blue-50">
+            <CardTitle className="text-2xl text-gray-900">Informations de l'annonce</CardTitle>
+            <CardDescription className="text-base">
+              Remplissez tous les champs pour créer votre annonce vérifiée
             </CardDescription>
           </CardHeader>
           <CardContent>
