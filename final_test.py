@@ -6,7 +6,7 @@ Final comprehensive test for missing endpoints
 import requests
 import json
 
-base_url = "https://trusted-transactions.preview.emergentagent.com/api"
+base_url = "https://kama-preview.preview.emergentagent.com/api"
 headers = {"Content-Type": "application/json"}
 
 print("=== Final KAMA Backend Validation ===")

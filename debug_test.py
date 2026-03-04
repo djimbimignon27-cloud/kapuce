@@ -6,7 +6,7 @@ Quick debug test to see API responses
 import requests
 import json
 
-base_url = "https://trusted-transactions.preview.emergentagent.com/api"
+base_url = "https://kama-preview.preview.emergentagent.com/api"
 headers = {"Content-Type": "application/json"}
 
 # Test registration and see response

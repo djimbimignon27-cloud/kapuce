@@ -11,7 +11,7 @@ from datetime import datetime
 
 class KAMABackendTester:
     def __init__(self):
-        self.base_url = "https://trusted-transactions.preview.emergentagent.com/api"
+        self.base_url = "https://kama-preview.preview.emergentagent.com/api"
         self.headers = {"Content-Type": "application/json"}
         self.auth_token = None
         self.admin_token = None

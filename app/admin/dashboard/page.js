@@ -8,11 +8,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   LayoutDashboard, Users, FileText, DollarSign, AlertTriangle, 
-  LogOut, Settings, Shield, TrendingUp, Eye, CheckCircle, XCircle,
-  Menu, X, Clock, Home
+  LogOut, Shield, TrendingUp, CheckCircle, XCircle,
+  Menu, X, Clock, Home, Settings, Bell, Search,
+  ChevronRight, BarChart3, Eye, UserCheck, FileWarning,
+  ArrowUpRight, ArrowDownRight, Activity
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Toaster } from '@/components/ui/toaster';
+import { Input } from '@/components/ui/input';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -83,37 +86,41 @@ export default function AdminDashboard() {
       <Toaster />
 
       {/* Sidebar */}
-      <aside className={`fixed top-0 left-0 z-40 h-screen transition-transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} w-64 bg-gradient-to-b from-gray-900 to-gray-800 border-r border-gray-700`}>
+      <aside className={`fixed top-0 left-0 z-40 h-screen transition-all duration-300 ${sidebarOpen ? 'w-72' : 'w-20'} bg-gradient-to-b from-gray-900 via-slate-900 to-gray-900 border-r border-gray-800`}>
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="p-6 border-b border-gray-700">
+          <div className="p-6 border-b border-gray-800">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-700 rounded-lg flex items-center justify-center">
+              <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-red-700 rounded-xl flex items-center justify-center shadow-lg shadow-red-500/20 flex-shrink-0">
                 <Shield className="w-6 h-6 text-white" />
               </div>
-              <div>
-                <h2 className="text-white font-bold text-lg">KAMA Admin</h2>
-                <p className="text-gray-400 text-xs">Panneau d'administration</p>
-              </div>
+              {sidebarOpen && (
+                <div className="animate-in fade-in slide-in-from-left">
+                  <h2 className="text-white font-bold text-lg">KAMA Admin</h2>
+                  <p className="text-gray-500 text-xs">Panneau d'administration</p>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Admin Info */}
-          <div className="p-4 bg-gray-800/50">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-kama-gold to-yellow-600 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-sm">
-                  {adminUser.fullName?.charAt(0) || 'A'}
-                </span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-white font-medium text-sm truncate">{adminUser.fullName}</p>
-                <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-xs">
-                  {adminUser.role}
-                </Badge>
+          {sidebarOpen && (
+            <div className="p-4 mx-4 mt-4 bg-gray-800/50 rounded-xl border border-gray-700/50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-kama-gold to-yellow-600 rounded-full flex items-center justify-center flex-shrink-0">
+                  <span className="text-white font-bold text-sm">
+                    {adminUser.fullName?.charAt(0) || 'A'}
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-white font-medium text-sm truncate">{adminUser.fullName}</p>
+                  <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-xs mt-1">
+                    {adminUser.role}
+                  </Badge>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Menu */}
           <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
@@ -124,17 +131,17 @@ export default function AdminDashboard() {
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
-                  className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all ${
+                  className={`w-full flex items-center ${sidebarOpen ? 'justify-between px-4' : 'justify-center'} py-3.5 rounded-xl transition-all duration-200 ${
                     isActive 
-                      ? 'bg-red-500 text-white shadow-lg' 
-                      : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                      ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-500/30' 
+                      : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <Icon className="w-5 h-5" />
-                    <span className="font-medium">{item.label}</span>
+                    <Icon className="w-5 h-5 flex-shrink-0" />
+                    {sidebarOpen && <span className="font-medium">{item.label}</span>}
                   </div>
-                  {item.badge !== null && item.badge > 0 && (
+                  {sidebarOpen && item.badge !== null && item.badge > 0 && (
                     <Badge className={`${
                       item.color === 'yellow' ? 'bg-yellow-500' :
                       item.color === 'red' ? 'bg-red-500' :
@@ -149,34 +156,34 @@ export default function AdminDashboard() {
           </nav>
 
           {/* Footer */}
-          <div className="p-4 border-t border-gray-700 space-y-2">
+          <div className="p-4 border-t border-gray-800 space-y-2">
             <Link href="/">
-              <Button variant="ghost" className="w-full justify-start text-gray-400 hover:text-white hover:bg-gray-800">
-                <Home className="w-5 h-5 mr-3" />
-                Retour au site
+              <Button variant="ghost" className={`w-full ${sidebarOpen ? 'justify-start' : 'justify-center'} text-gray-400 hover:text-white hover:bg-gray-800/50 rounded-xl`}>
+                <Home className="w-5 h-5" />
+                {sidebarOpen && <span className="ml-3">Retour au site</span>}
               </Button>
             </Link>
             <Button 
               onClick={handleLogout}
               variant="ghost" 
-              className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-500/10"
+              className={`w-full ${sidebarOpen ? 'justify-start' : 'justify-center'} text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl`}
             >
-              <LogOut className="w-5 h-5 mr-3" />
-              Déconnexion
+              <LogOut className="w-5 h-5" />
+              {sidebarOpen && <span className="ml-3">Déconnexion</span>}
             </Button>
           </div>
         </div>
       </aside>
 
       {/* Main Content */}
-      <div className={`${sidebarOpen ? 'ml-64' : 'ml-0'} transition-all`}>
+      <div className={`${sidebarOpen ? 'ml-72' : 'ml-20'} transition-all duration-300`}>
         {/* Top Bar */}
         <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
           <div className="flex items-center justify-between px-6 py-4">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition"
+                className="p-2.5 hover:bg-gray-100 rounded-xl transition"
               >
                 {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>
@@ -184,16 +191,26 @@ export default function AdminDashboard() {
                 <h1 className="text-2xl font-bold text-gray-900">
                   {menuItems.find(item => item.id === activeTab)?.label || 'Dashboard'}
                 </h1>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-500">
                   Gérez votre plateforme KAMA
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <div className="text-right">
-                <p className="text-sm font-medium text-gray-900">{adminUser.fullName}</p>
-                <p className="text-xs text-gray-600">{adminUser.email}</p>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input 
+                  placeholder="Rechercher..." 
+                  className="pl-10 w-64 h-10 bg-gray-50 border-gray-200 rounded-xl"
+                />
               </div>
+              <Button variant="ghost" size="icon" className="relative">
+                <Bell className="w-5 h-5" />
+                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              </Button>
+              <Button variant="ghost" size="icon">
+                <Settings className="w-5 h-5" />
+              </Button>
             </div>
           </div>
         </header>
@@ -202,7 +219,10 @@ export default function AdminDashboard() {
         <main className="p-6">
           {loading ? (
             <div className="flex items-center justify-center py-20">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500"></div>
+              <div className="relative">
+                <div className="w-16 h-16 border-4 border-red-500/20 border-t-red-500 rounded-full animate-spin"></div>
+                <Shield className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-red-500" />
+              </div>
             </div>
           ) : (
             <>
@@ -210,169 +230,206 @@ export default function AdminDashboard() {
                 <div className="space-y-6">
                   {/* Stats Cards */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <Card className="border-l-4 border-l-blue-500">
-                      <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium text-gray-600">
-                          Total Utilisateurs
-                        </CardTitle>
-                        <Users className="w-4 h-4 text-blue-500" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-3xl font-bold text-gray-900">{stats.users.total}</div>
-                        <p className="text-xs text-gray-600 mt-1">
-                          <span className="text-green-600 font-semibold">+{stats.users.newToday}</span> aujourd'hui
-                        </p>
-                      </CardContent>
-                    </Card>
-
-                    <Card className="border-l-4 border-l-green-500">
-                      <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium text-gray-600">
-                          Utilisateurs Vérifiés
-                        </CardTitle>
-                        <CheckCircle className="w-4 h-4 text-green-500" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-3xl font-bold text-gray-900">{stats.users.verified}</div>
-                        <p className="text-xs text-gray-600 mt-1">
-                          {((stats.users.verified / stats.users.total) * 100).toFixed(1)}% du total
-                        </p>
-                      </CardContent>
-                    </Card>
-
-                    <Card className="border-l-4 border-l-yellow-500">
-                      <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium text-gray-600">
-                          Annonces en Attente
-                        </CardTitle>
-                        <Clock className="w-4 h-4 text-yellow-500" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-3xl font-bold text-gray-900">{stats.listings.pending}</div>
-                        <p className="text-xs text-gray-600 mt-1">
-                          {stats.listings.active} actives
-                        </p>
-                      </CardContent>
-                    </Card>
-
-                    <Card className="border-l-4 border-l-kama-gold">
-                      <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium text-gray-600">
-                          Revenus (Commission)
-                        </CardTitle>
-                        <DollarSign className="w-4 h-4 text-kama-gold" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-3xl font-bold text-gray-900">
-                          {new Intl.NumberFormat('fr-FR', {
-                            style: 'currency',
-                            currency: 'XAF',
-                            maximumFractionDigits: 0,
-                          }).format(stats.revenue.totalCommission)}
+                    <Card className="border-0 shadow-lg rounded-2xl overflow-hidden group hover:shadow-xl transition-all">
+                      <CardContent className="p-6">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-gray-500 mb-1">Total Utilisateurs</p>
+                            <p className="text-4xl font-black text-gray-900">{stats.users.total}</p>
+                            <div className="flex items-center gap-1 mt-2 text-green-500 text-sm">
+                              <ArrowUpRight className="w-4 h-4" />
+                              <span className="font-medium">+{stats.users.newToday} aujourd'hui</span>
+                            </div>
+                          </div>
+                          <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:scale-110 transition-transform">
+                            <Users className="w-7 h-7 text-white" />
+                          </div>
                         </div>
-                        <p className="text-xs text-gray-600 mt-1">
-                          Commission 7%
-                        </p>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border-0 shadow-lg rounded-2xl overflow-hidden group hover:shadow-xl transition-all">
+                      <CardContent className="p-6">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-gray-500 mb-1">Utilisateurs Vérifiés</p>
+                            <p className="text-4xl font-black text-gray-900">{stats.users.verified}</p>
+                            <div className="flex items-center gap-1 mt-2 text-gray-500 text-sm">
+                              <Activity className="w-4 h-4" />
+                              <span>{stats.users.total > 0 ? ((stats.users.verified / stats.users.total) * 100).toFixed(0) : 0}% du total</span>
+                            </div>
+                          </div>
+                          <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center shadow-lg shadow-green-500/30 group-hover:scale-110 transition-transform">
+                            <UserCheck className="w-7 h-7 text-white" />
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border-0 shadow-lg rounded-2xl overflow-hidden group hover:shadow-xl transition-all">
+                      <CardContent className="p-6">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-gray-500 mb-1">Annonces en Attente</p>
+                            <p className="text-4xl font-black text-gray-900">{stats.listings.pending}</p>
+                            <div className="flex items-center gap-1 mt-2 text-yellow-500 text-sm">
+                              <Clock className="w-4 h-4" />
+                              <span className="font-medium">{stats.listings.active} actives</span>
+                            </div>
+                          </div>
+                          <div className="w-14 h-14 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-yellow-500/30 group-hover:scale-110 transition-transform">
+                            <FileWarning className="w-7 h-7 text-white" />
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border-0 shadow-lg rounded-2xl overflow-hidden group hover:shadow-xl transition-all">
+                      <CardContent className="p-6">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-gray-500 mb-1">Commission Totale</p>
+                            <p className="text-3xl font-black text-gray-900">
+                              {new Intl.NumberFormat('fr-FR', {
+                                notation: 'compact',
+                                compactDisplay: 'short'
+                              }).format(stats.revenue.totalCommission)} XAF
+                            </p>
+                            <div className="flex items-center gap-1 mt-2 text-kama-gold text-sm">
+                              <TrendingUp className="w-4 h-4" />
+                              <span className="font-medium">7% commission</span>
+                            </div>
+                          </div>
+                          <div className="w-14 h-14 bg-gradient-to-br from-kama-gold to-yellow-600 rounded-2xl flex items-center justify-center shadow-lg shadow-kama-gold/30 group-hover:scale-110 transition-transform">
+                            <DollarSign className="w-7 h-7 text-white" />
+                          </div>
+                        </div>
                       </CardContent>
                     </Card>
                   </div>
 
                   {/* Quick Actions */}
-                  <Card>
+                  <Card className="border-0 shadow-lg rounded-2xl">
                     <CardHeader>
-                      <CardTitle>Actions Rapides</CardTitle>
+                      <CardTitle className="text-xl font-bold">Actions Rapides</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <Button 
+                        <button 
                           onClick={() => setActiveTab('listings')}
-                          className="h-24 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 flex flex-col gap-2"
+                          className="group p-6 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-2xl border-2 border-yellow-200 hover:border-yellow-400 transition-all hover:shadow-lg"
                         >
-                          <FileText className="w-8 h-8" />
-                          <div>
-                            <div className="font-bold text-lg">{stats.listings.pending}</div>
-                            <div className="text-xs">Annonces à valider</div>
+                          <div className="flex items-center gap-4">
+                            <div className="w-14 h-14 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                              <FileText className="w-7 h-7 text-white" />
+                            </div>
+                            <div className="text-left">
+                              <p className="text-3xl font-black text-gray-900">{stats.listings.pending}</p>
+                              <p className="text-sm text-gray-600">Annonces à valider</p>
+                            </div>
                           </div>
-                        </Button>
+                        </button>
                         
-                        <Button 
+                        <button 
                           onClick={() => setActiveTab('reports')}
-                          className="h-24 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 flex flex-col gap-2"
+                          className="group p-6 bg-gradient-to-br from-red-50 to-pink-50 rounded-2xl border-2 border-red-200 hover:border-red-400 transition-all hover:shadow-lg"
                         >
-                          <AlertTriangle className="w-8 h-8" />
-                          <div>
-                            <div className="font-bold text-lg">{stats.reports.pending}</div>
-                            <div className="text-xs">Signalements</div>
+                          <div className="flex items-center gap-4">
+                            <div className="w-14 h-14 bg-gradient-to-br from-red-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                              <AlertTriangle className="w-7 h-7 text-white" />
+                            </div>
+                            <div className="text-left">
+                              <p className="text-3xl font-black text-gray-900">{stats.reports.pending}</p>
+                              <p className="text-sm text-gray-600">Signalements</p>
+                            </div>
                           </div>
-                        </Button>
+                        </button>
                         
-                        <Button 
+                        <button 
                           onClick={() => setActiveTab('users')}
-                          className="h-24 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 flex flex-col gap-2"
+                          className="group p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border-2 border-blue-200 hover:border-blue-400 transition-all hover:shadow-lg"
                         >
-                          <Users className="w-8 h-8" />
-                          <div>
-                            <div className="font-bold text-lg">{stats.users.total}</div>
-                            <div className="text-xs">Gérer utilisateurs</div>
+                          <div className="flex items-center gap-4">
+                            <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                              <Users className="w-7 h-7 text-white" />
+                            </div>
+                            <div className="text-left">
+                              <p className="text-3xl font-black text-gray-900">{stats.users.total}</p>
+                              <p className="text-sm text-gray-600">Gérer utilisateurs</p>
+                            </div>
                           </div>
-                        </Button>
+                        </button>
                       </div>
                     </CardContent>
                   </Card>
 
                   {/* Recent Activity */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Utilisateurs Récents</CardTitle>
+                    <Card className="border-0 shadow-lg rounded-2xl">
+                      <CardHeader className="flex flex-row items-center justify-between">
+                        <CardTitle className="text-xl font-bold">Utilisateurs Récents</CardTitle>
+                        <Button variant="ghost" size="sm" className="text-kama-blue">
+                          Voir tout <ChevronRight className="w-4 h-4 ml-1" />
+                        </Button>
                       </CardHeader>
                       <CardContent>
-                        <div className="space-y-3">
-                          {stats.recentActivity.users.map((user) => (
-                            <div key={user._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                              <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
-                                  <span className="text-white font-bold text-sm">
-                                    {user.fullName.charAt(0)}
-                                  </span>
+                        <div className="space-y-4">
+                          {stats.recentActivity.users.length === 0 ? (
+                            <p className="text-center text-gray-500 py-8">Aucun utilisateur récent</p>
+                          ) : (
+                            stats.recentActivity.users.map((user) => (
+                              <div key={user._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                                <div className="flex items-center gap-4">
+                                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow">
+                                    <span className="text-white font-bold">
+                                      {user.fullName?.charAt(0) || '?'}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <p className="font-semibold text-gray-900">{user.fullName}</p>
+                                    <p className="text-sm text-gray-500">{user.email}</p>
+                                  </div>
                                 </div>
-                                <div>
-                                  <p className="font-medium text-sm">{user.fullName}</p>
-                                  <p className="text-xs text-gray-600">{user.email}</p>
-                                </div>
+                                <Badge className={`${user.emailVerified ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                                  {user.role}
+                                </Badge>
                               </div>
-                              <Badge className={user.emailVerified ? 'bg-green-500' : 'bg-gray-400'}>
-                                {user.role}
-                              </Badge>
-                            </div>
-                          ))}
+                            ))
+                          )}
                         </div>
                       </CardContent>
                     </Card>
 
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Transactions Récentes</CardTitle>
+                    <Card className="border-0 shadow-lg rounded-2xl">
+                      <CardHeader className="flex flex-row items-center justify-between">
+                        <CardTitle className="text-xl font-bold">Transactions Récentes</CardTitle>
+                        <Button variant="ghost" size="sm" className="text-kama-blue">
+                          Voir tout <ChevronRight className="w-4 h-4 ml-1" />
+                        </Button>
                       </CardHeader>
                       <CardContent>
-                        <div className="space-y-3">
-                          {stats.recentActivity.transactions.map((tx) => (
-                            <div key={tx._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                              <div>
-                                <p className="font-medium text-sm">{tx.listingId?.title || 'N/A'}</p>
-                                <p className="text-xs text-gray-600">
-                                  Commission: {new Intl.NumberFormat('fr-FR', {
-                                    style: 'currency',
-                                    currency: 'XAF',
-                                    maximumFractionDigits: 0,
-                                  }).format(tx.commissionAmount)}
-                                </p>
+                        <div className="space-y-4">
+                          {stats.recentActivity.transactions.length === 0 ? (
+                            <p className="text-center text-gray-500 py-8">Aucune transaction récente</p>
+                          ) : (
+                            stats.recentActivity.transactions.map((tx) => (
+                              <div key={tx._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                                <div>
+                                  <p className="font-semibold text-gray-900">{tx.listingId?.title || 'N/A'}</p>
+                                  <p className="text-sm text-gray-500">
+                                    Commission: {new Intl.NumberFormat('fr-FR', {
+                                      style: 'currency',
+                                      currency: 'XAF',
+                                      maximumFractionDigits: 0,
+                                    }).format(tx.commissionAmount)}
+                                  </p>
+                                </div>
+                                <Badge className={`${tx.status === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                  {tx.status}
+                                </Badge>
                               </div>
-                              <Badge className={tx.status === 'PAID' ? 'bg-green-500' : 'bg-yellow-500'}>
-                                {tx.status}
-                              </Badge>
-                            </div>
-                          ))}
+                            ))
+                          )}
                         </div>
                       </CardContent>
                     </Card>
@@ -381,12 +438,14 @@ export default function AdminDashboard() {
               )}
 
               {activeTab !== 'dashboard' && (
-                <Card>
-                  <CardContent className="p-12 text-center">
-                    <div className="text-6xl mb-4">🚧</div>
-                    <h3 className="text-2xl font-bold mb-2">Section en construction</h3>
-                    <p className="text-gray-600">
-                      La section {menuItems.find(item => item.id === activeTab)?.label} est en cours de développement.
+                <Card className="border-0 shadow-lg rounded-2xl">
+                  <CardContent className="p-16 text-center">
+                    <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <Settings className="w-12 h-12 text-gray-400" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-3">Section en construction</h3>
+                    <p className="text-gray-600 max-w-md mx-auto">
+                      La section <span className="font-semibold text-kama-blue">{menuItems.find(item => item.id === activeTab)?.label}</span> est en cours de développement et sera bientôt disponible.
                     </p>
                   </CardContent>
                 </Card>
