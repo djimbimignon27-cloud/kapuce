@@ -10,16 +10,15 @@ export async function GET(request) {
   try {
     await connectDB();
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
+    const reviewedUserId = searchParams.get('reviewedUserId');
 
-    if (!userId) {
+    if (!reviewedUserId) {
       return NextResponse.json(
-        { error: 'userId requis' },
+        { error: 'reviewedUserId requis' },
         { status: 400 }
-      );
-    }
+      );\n    }
 
-    const reviews = await Review.find({ reviewedUserId: userId })
+    const reviews = await Review.find({ reviewedUserId })
       .populate('reviewerId', 'fullName profilePicture')
       .populate('listingId', 'title')
       .sort({ createdAt: -1 });
