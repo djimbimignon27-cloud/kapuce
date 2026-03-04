@@ -79,11 +79,14 @@ export default function ChooseAccountPage() {
         {/* Header */}
         <div className="text-center mb-12 animate-in fade-in slide-in-from-bottom duration-700">
           <div className="flex justify-center mb-6">
-            <img 
-              src="https://customer-assets.emergentagent.com/job_trusted-transactions/artifacts/edwa4pun_IMG-20260221-WA0185.jpg" 
-              alt="KAMA Logo" 
-              className="h-20 w-auto brightness-0 invert"
-            />
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-kama-blue via-kama-gold to-blue-600 blur-3xl opacity-40 group-hover:opacity-60 transition-all rounded-full animate-pulse"></div>
+              <img 
+                src="https://customer-assets.emergentagent.com/job_trusted-transactions/artifacts/edwa4pun_IMG-20260221-WA0185.jpg" 
+                alt="KAMA Logo" 
+                className="h-32 w-auto relative z-10 drop-shadow-2xl transform group-hover:scale-110 transition-transform brightness-0 invert"
+              />
+            </div>
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
             Choisissez votre type de compte

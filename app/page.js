@@ -89,10 +89,11 @@ export default function App() {
             {/* Logo avec image */}
             <Link href="/" className="flex items-center space-x-3 group">
               <div className="relative">
+                <div className="absolute inset-0 bg-kama-gold/20 blur-xl rounded-full group-hover:bg-kama-gold/30 transition-all"></div>
                 <img 
                   src="https://customer-assets.emergentagent.com/job_trusted-transactions/artifacts/edwa4pun_IMG-20260221-WA0185.jpg" 
                   alt="KAMA Logo" 
-                  className="h-12 w-auto transition-transform group-hover:scale-105"
+                  className="h-16 w-auto relative z-10 transition-transform group-hover:scale-105 drop-shadow-2xl"
                 />
               </div>
             </Link>
@@ -421,11 +422,14 @@ export default function App() {
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
             <div>
-              <img 
-                src="https://customer-assets.emergentagent.com/job_trusted-transactions/artifacts/edwa4pun_IMG-20260221-WA0185.jpg" 
-                alt="KAMA Logo" 
-                className="h-12 w-auto mb-4 brightness-0 invert"
-              />
+              <div className="relative group mb-4">
+                <div className="absolute inset-0 bg-kama-gold/20 blur-xl rounded-full group-hover:bg-kama-gold/30 transition-all"></div>
+                <img 
+                  src="https://customer-assets.emergentagent.com/job_trusted-transactions/artifacts/edwa4pun_IMG-20260221-WA0185.jpg" 
+                  alt="KAMA Logo" 
+                  className="h-16 w-auto brightness-0 invert relative z-10 drop-shadow-2xl"
+                />
+              </div>
               <p className="text-gray-400 leading-relaxed">
                 La plateforme de confiance pour vos transactions sécurisées au Gabon.
               </p>

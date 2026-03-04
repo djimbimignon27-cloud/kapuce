@@ -141,11 +141,14 @@ export default function RegisterPage() {
         <Card className="backdrop-blur-lg bg-white/95 shadow-2xl border-0">
           <CardHeader className="text-center pb-6 border-b border-gray-100">
             <div className="flex justify-center mb-6">
-              <img 
-                src="https://customer-assets.emergentagent.com/job_trusted-transactions/artifacts/edwa4pun_IMG-20260221-WA0185.jpg" 
-                alt="KAMA Logo" 
-                className="h-16 w-auto"
-              />
+              <div className="relative group">
+                <div className="absolute inset-0 bg-gradient-to-r from-kama-gold to-yellow-600 blur-2xl opacity-30 group-hover:opacity-50 transition-all rounded-full"></div>
+                <img 
+                  src="https://customer-assets.emergentagent.com/job_trusted-transactions/artifacts/edwa4pun_IMG-20260221-WA0185.jpg" 
+                  alt="KAMA Logo" 
+                  className="h-24 w-auto relative z-10 drop-shadow-2xl transform group-hover:scale-105 transition-transform"
+                />
+              </div>
             </div>
             
             {/* Account Type Badge */}

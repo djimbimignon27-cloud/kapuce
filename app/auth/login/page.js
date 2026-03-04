@@ -98,12 +98,16 @@ export default function LoginPage() {
 
         <Card className="backdrop-blur-lg bg-white/95 shadow-2xl border-0">
           <CardHeader className="text-center pb-8">
-            <div className="flex justify-center mb-6">
-              <img 
-                src="https://customer-assets.emergentagent.com/job_trusted-transactions/artifacts/edwa4pun_IMG-20260221-WA0185.jpg" 
-                alt="KAMA Logo" 
-                className="h-16 w-auto"
-              />
+            {/* Logo agrandi avec effets */}
+            <div className="flex justify-center mb-8">
+              <div className="relative group">
+                <div className="absolute inset-0 bg-gradient-to-r from-kama-blue to-kama-gold blur-2xl opacity-30 group-hover:opacity-50 transition-all rounded-full"></div>
+                <img 
+                  src="https://customer-assets.emergentagent.com/job_trusted-transactions/artifacts/edwa4pun_IMG-20260221-WA0185.jpg" 
+                  alt="KAMA Logo" 
+                  className="h-28 w-auto relative z-10 drop-shadow-2xl transform group-hover:scale-105 transition-transform"
+                />
+              </div>
             </div>
             <CardTitle className="text-3xl font-bold bg-gradient-to-r from-kama-blue to-blue-600 bg-clip-text text-transparent">
               Bon retour sur KAMA
