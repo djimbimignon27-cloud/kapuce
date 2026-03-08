@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, PlusCircle, AlertCircle, Home, Car, MapPin, Image, Video, X, Upload, Sparkles, CheckCircle, Info } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { 
+  ArrowLeft, PlusCircle, AlertCircle, Home, Car, MapPin, Image, Video, 
+  X, Upload, Sparkles, CheckCircle, Info, FileText, ChevronRight,
+  Building2, Truck, Trees, Ruler, Calendar, Fuel, Settings, Shield
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Toaster } from '@/components/ui/toaster';
 
@@ -18,56 +23,169 @@ export default function CreateListingPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [constants, setConstants] = useState(null);
   const [currentStep, setCurrentStep] = useState(1);
+  const totalSteps = 4;
+
+  // Form data
   const [formData, setFormData] = useState({
+    // Base
     title: '',
     description: '',
     price: '',
-    type: 'HOUSE',
+    type: '',
+    subCategory: '',
     category: 'SALE',
     city: '',
     address: '',
+    neighborhood: '',
+    
+    // Land specific
+    landDetails: {
+      surface: '',
+      length: '',
+      width: '',
+      topography: '',
+      accessibility: [],
+      boundaryMarked: false,
+    },
+    
+    // Property specific
+    propertyDetails: {
+      surface: '',
+      bedrooms: '',
+      bathrooms: '',
+      floors: '',
+      yearBuilt: '',
+      condition: '',
+      furnished: 'UNFURNISHED',
+      parking: '',
+      amenities: [],
+    },
+    
+    // Vehicle specific
+    vehicleDetails: {
+      brand: '',
+      model: '',
+      year: '',
+      mileage: '',
+      fuel: '',
+      transmission: '',
+      color: '',
+      doors: '',
+      condition: '',
+      features: [],
+    },
+    
+    // Media
     images: '',
     video: '',
   });
+
   const [errors, setErrors] = useState({});
 
-  const typeOptions = [
-    { value: 'HOUSE', label: 'Immobilier', icon: Home, description: 'Maisons, appartements, bureaux' },
-    { value: 'CAR', label: 'Véhicule', icon: Car, description: 'Voitures, motos, camions' },
-    { value: 'LAND', label: 'Terrain', icon: MapPin, description: 'Terrains, parcelles' },
-  ];
+  useEffect(() => {
+    fetchConstants();
+  }, []);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    if (errors[e.target.name]) {
-      setErrors({ ...errors, [e.target.name]: '' });
+  const fetchConstants = async () => {
+    try {
+      const response = await fetch('/api/listings/constants');
+      const data = await response.json();
+      if (data.success) {
+        setConstants(data.data);
+      }
+    } catch (error) {
+      console.error('Erreur:', error);
     }
   };
 
-  const validate = () => {
+  const typeOptions = [
+    { value: 'LAND', label: 'Terrain', icon: Trees, description: 'Terrains et parcelles' },
+    { value: 'HOUSE', label: 'Immobilier', icon: Building2, description: 'Maisons, appartements, bureaux' },
+    { value: 'CAR', label: 'Véhicule', icon: Truck, description: 'Voitures, motos, camions' },
+  ];
+
+  const handleChange = (name, value) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const handleNestedChange = (parent, name, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [parent]: {
+        ...prev[parent],
+        [name]: value,
+      },
+    }));
+  };
+
+  const handleArrayToggle = (parent, name, value) => {
+    setFormData(prev => {
+      const currentArray = prev[parent][name] || [];
+      const newArray = currentArray.includes(value)
+        ? currentArray.filter(v => v !== value)
+        : [...currentArray, value];
+      return {
+        ...prev,
+        [parent]: {
+          ...prev[parent],
+          [name]: newArray,
+        },
+      };
+    });
+  };
+
+  const validateStep = (step) => {
     const newErrors = {};
-    if (!formData.title) newErrors.title = 'Titre requis';
-    if (!formData.description) newErrors.description = 'Description requise';
-    if (!formData.price || isNaN(formData.price)) newErrors.price = 'Prix valide requis';
-    if (!formData.city) newErrors.city = 'Ville requise';
-    if (!formData.address) newErrors.address = 'Adresse requise';
-    return newErrors;
+    
+    switch (step) {
+      case 1:
+        if (!formData.type) newErrors.type = 'Sélectionnez un type de bien';
+        if (!formData.subCategory) newErrors.subCategory = 'Sélectionnez une sous-catégorie';
+        if (!formData.category) newErrors.category = 'Sélectionnez vente ou location';
+        break;
+      case 2:
+        if (!formData.title) newErrors.title = 'Titre requis';
+        if (!formData.description) newErrors.description = 'Description requise';
+        if (!formData.price) newErrors.price = 'Prix requis';
+        if (!formData.city) newErrors.city = 'Ville requise';
+        if (!formData.address) newErrors.address = 'Adresse requise';
+        break;
+      case 3:
+        // Validation spécifique selon le type
+        if (formData.type === 'LAND') {
+          if (!formData.landDetails.surface) newErrors.surface = 'Superficie requise';
+        } else if (formData.type === 'HOUSE') {
+          if (!formData.propertyDetails.surface) newErrors.surface = 'Surface requise';
+        } else if (formData.type === 'CAR') {
+          if (!formData.vehicleDetails.brand) newErrors.brand = 'Marque requise';
+          if (!formData.vehicleDetails.year) newErrors.year = 'Année requise';
+        }
+        break;
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const nextStep = () => {
+    if (validateStep(currentStep)) {
+      setCurrentStep(prev => Math.min(prev + 1, totalSteps));
+    }
+  };
+
+  const prevStep = () => {
+    setCurrentStep(prev => Math.max(prev - 1, 1));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    const newErrors = validate();
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      toast({
-        title: 'Formulaire incomplet',
-        description: 'Veuillez remplir tous les champs requis',
-        variant: 'destructive',
-      });
-      return;
-    }
+    if (!validateStep(currentStep)) return;
 
     const token = localStorage.getItem('accessToken');
     if (!token) {
@@ -82,7 +200,10 @@ export default function CreateListingPage() {
 
     setLoading(true);
     try {
-      const images = formData.images ? formData.images.split(',').map(url => url.trim()).filter(url => url) : [];
+      // Préparer les images
+      const images = formData.images 
+        ? formData.images.split(',').map(url => ({ url: url.trim() })).filter(img => img.url)
+        : [];
       
       if (images.length > 5) {
         toast({
@@ -93,19 +214,21 @@ export default function CreateListingPage() {
         setLoading(false);
         return;
       }
-      
+
+      const payload = {
+        ...formData,
+        price: parseFloat(formData.price),
+        images,
+        video: formData.video ? { url: formData.video } : null,
+      };
+
       const response = await fetch('/api/listings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          ...formData,
-          price: parseFloat(formData.price),
-          images,
-          video: formData.video || '',
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
@@ -113,11 +236,9 @@ export default function CreateListingPage() {
       if (response.ok) {
         toast({
           title: '🎉 Annonce créée avec succès!',
-          description: 'Votre annonce est en attente de validation par notre équipe.',
+          description: 'Votre annonce est en attente de validation.',
         });
-        setTimeout(() => {
-          router.push('/dashboard');
-        }, 1500);
+        setTimeout(() => router.push('/dashboard'), 1500);
       } else {
         toast({
           title: 'Erreur',
@@ -137,7 +258,672 @@ export default function CreateListingPage() {
     }
   };
 
-  const imageCount = formData.images ? formData.images.split(',').filter(url => url.trim()).length : 0;
+  const renderStepIndicator = () => (
+    <div className="mb-8">
+      <div className="flex items-center justify-between max-w-lg mx-auto">
+        {[1, 2, 3, 4].map((step) => (
+          <div key={step} className="flex items-center">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all ${
+              currentStep >= step 
+                ? 'bg-gradient-to-r from-kama-gold to-yellow-500 text-white shadow-lg' 
+                : 'bg-gray-200 text-gray-500'
+            }`}>
+              {currentStep > step ? <CheckCircle className="w-5 h-5" /> : step}
+            </div>
+            {step < 4 && (
+              <div className={`w-16 h-1 mx-2 rounded ${
+                currentStep > step ? 'bg-kama-gold' : 'bg-gray-200'
+              }`}></div>
+            )}
+          </div>
+        ))}
+      </div>
+      <div className="flex justify-between max-w-lg mx-auto mt-2 text-xs text-gray-500 px-2">
+        <span>Type</span>
+        <span>Détails</span>
+        <span>Spécificités</span>
+        <span>Médias</span>
+      </div>
+    </div>
+  );
+
+  // Step 1: Type Selection
+  const renderStep1 = () => (
+    <Card className="border-0 shadow-xl rounded-2xl overflow-hidden">
+      <CardHeader className="bg-gradient-to-r from-slate-50 to-white border-b border-gray-100">
+        <CardTitle className="text-2xl flex items-center gap-3">
+          <div className="w-10 h-10 bg-kama-gold/10 rounded-xl flex items-center justify-center">
+            <span className="text-xl">1️⃣</span>
+          </div>
+          Type de bien
+        </CardTitle>
+        <CardDescription>Sélectionnez la catégorie de votre annonce</CardDescription>
+      </CardHeader>
+      <CardContent className="p-6">
+        {/* Type Selection */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          {typeOptions.map((option) => {
+            const Icon = option.icon;
+            const isSelected = formData.type === option.value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => {
+                  handleChange('type', option.value);
+                  handleChange('subCategory', '');
+                }}
+                className={`p-6 rounded-2xl border-2 transition-all text-left ${
+                  isSelected 
+                    ? 'border-kama-gold bg-kama-gold/5 shadow-lg' 
+                    : 'border-gray-200 hover:border-kama-gold/50 hover:bg-gray-50'
+                }`}
+              >
+                <div className={`w-14 h-14 rounded-xl flex items-center justify-center mb-4 ${
+                  isSelected 
+                    ? 'bg-gradient-to-r from-kama-gold to-yellow-500 text-white' 
+                    : 'bg-gray-100 text-gray-600'
+                }`}>
+                  <Icon className="w-7 h-7" />
+                </div>
+                <h3 className="font-bold text-lg mb-1">{option.label}</h3>
+                <p className="text-sm text-gray-500">{option.description}</p>
+              </button>
+            );
+          })}
+        </div>
+        {errors.type && (
+          <p className="text-red-500 text-sm flex items-center gap-1 mb-4">
+            <AlertCircle className="w-4 h-4" />
+            {errors.type}
+          </p>
+        )}
+
+        {/* Sub Category */}
+        {formData.type && constants?.subCategories[formData.type] && (
+          <div className="mb-6">
+            <Label className="text-gray-700 font-semibold mb-3 block">Sous-catégorie *</Label>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {constants.subCategories[formData.type].map((sub) => (
+                <button
+                  key={sub.value}
+                  type="button"
+                  onClick={() => handleChange('subCategory', sub.value)}
+                  className={`p-3 rounded-xl border-2 text-sm font-medium transition-all ${
+                    formData.subCategory === sub.value
+                      ? 'border-kama-blue bg-kama-blue/5 text-kama-blue'
+                      : 'border-gray-200 hover:border-kama-blue/50'
+                  }`}
+                >
+                  {sub.label}
+                </button>
+              ))}
+            </div>
+            {errors.subCategory && (
+              <p className="text-red-500 text-sm flex items-center gap-1 mt-2">
+                <AlertCircle className="w-4 h-4" />
+                {errors.subCategory}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Transaction Type */}
+        <div className="grid grid-cols-2 gap-4">
+          <button
+            type="button"
+            onClick={() => handleChange('category', 'SALE')}
+            className={`p-4 rounded-xl border-2 transition-all text-center ${
+              formData.category === 'SALE'
+                ? 'border-kama-blue bg-kama-blue/5'
+                : 'border-gray-200 hover:border-kama-blue/50'
+            }`}
+          >
+            <span className="text-2xl mb-2 block">🏷️</span>
+            <span className="font-bold">Vente</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleChange('category', 'RENT')}
+            className={`p-4 rounded-xl border-2 transition-all text-center ${
+              formData.category === 'RENT'
+                ? 'border-kama-blue bg-kama-blue/5'
+                : 'border-gray-200 hover:border-kama-blue/50'
+            }`}
+          >
+            <span className="text-2xl mb-2 block">🏠</span>
+            <span className="font-bold">Location</span>
+          </button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  // Step 2: Basic Details
+  const renderStep2 = () => (
+    <Card className="border-0 shadow-xl rounded-2xl overflow-hidden">
+      <CardHeader className="bg-gradient-to-r from-slate-50 to-white border-b border-gray-100">
+        <CardTitle className="text-2xl flex items-center gap-3">
+          <div className="w-10 h-10 bg-kama-gold/10 rounded-xl flex items-center justify-center">
+            <span className="text-xl">2️⃣</span>
+          </div>
+          Informations générales
+        </CardTitle>
+        <CardDescription>Décrivez votre bien</CardDescription>
+      </CardHeader>
+      <CardContent className="p-6 space-y-6">
+        {/* Title */}
+        <div>
+          <Label className="text-gray-700 font-semibold">Titre de l'annonce *</Label>
+          <Input
+            placeholder="Ex: Belle villa 4 chambres avec piscine"
+            value={formData.title}
+            onChange={(e) => handleChange('title', e.target.value)}
+            className={`h-12 mt-2 rounded-xl border-2 ${errors.title ? 'border-red-500' : 'border-gray-200 focus:border-kama-blue'}`}
+          />
+          {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
+        </div>
+
+        {/* Description */}
+        <div>
+          <Label className="text-gray-700 font-semibold">Description détaillée *</Label>
+          <Textarea
+            placeholder="Décrivez votre bien en détail..."
+            value={formData.description}
+            onChange={(e) => handleChange('description', e.target.value)}
+            rows={5}
+            className={`mt-2 rounded-xl border-2 ${errors.description ? 'border-red-500' : 'border-gray-200 focus:border-kama-blue'}`}
+          />
+          {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
+        </div>
+
+        {/* Price */}
+        <div>
+          <Label className="text-gray-700 font-semibold">
+            Prix (FCFA) {formData.category === 'RENT' && '/ mois'} *
+          </Label>
+          <Input
+            type="number"
+            placeholder="500000"
+            value={formData.price}
+            onChange={(e) => handleChange('price', e.target.value)}
+            className={`h-12 mt-2 rounded-xl border-2 ${errors.price ? 'border-red-500' : 'border-gray-200 focus:border-kama-blue'}`}
+          />
+          {errors.price && <p className="text-red-500 text-sm mt-1">{errors.price}</p>}
+        </div>
+
+        {/* Location */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label className="text-gray-700 font-semibold">Ville *</Label>
+            <Select value={formData.city} onValueChange={(v) => handleChange('city', v)}>
+              <SelectTrigger className={`h-12 mt-2 rounded-xl border-2 ${errors.city ? 'border-red-500' : 'border-gray-200'}`}>
+                <SelectValue placeholder="Sélectionner une ville" />
+              </SelectTrigger>
+              <SelectContent>
+                {constants?.cities?.map((city) => (
+                  <SelectItem key={city} value={city}>{city}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.city && <p className="text-red-500 text-sm mt-1">{errors.city}</p>}
+          </div>
+          <div>
+            <Label className="text-gray-700 font-semibold">Quartier</Label>
+            <Input
+              placeholder="Quartier"
+              value={formData.neighborhood}
+              onChange={(e) => handleChange('neighborhood', e.target.value)}
+              className="h-12 mt-2 rounded-xl border-2 border-gray-200 focus:border-kama-blue"
+            />
+          </div>
+        </div>
+
+        <div>
+          <Label className="text-gray-700 font-semibold">Adresse complète *</Label>
+          <Input
+            placeholder="Numéro, rue, repère..."
+            value={formData.address}
+            onChange={(e) => handleChange('address', e.target.value)}
+            className={`h-12 mt-2 rounded-xl border-2 ${errors.address ? 'border-red-500' : 'border-gray-200 focus:border-kama-blue'}`}
+          />
+          {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address}</p>}
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  // Step 3: Type-specific details
+  const renderStep3 = () => (
+    <Card className="border-0 shadow-xl rounded-2xl overflow-hidden">
+      <CardHeader className="bg-gradient-to-r from-slate-50 to-white border-b border-gray-100">
+        <CardTitle className="text-2xl flex items-center gap-3">
+          <div className="w-10 h-10 bg-kama-gold/10 rounded-xl flex items-center justify-center">
+            <span className="text-xl">3️⃣</span>
+          </div>
+          Caractéristiques spécifiques
+        </CardTitle>
+        <CardDescription>
+          {formData.type === 'LAND' && 'Détails du terrain'}
+          {formData.type === 'HOUSE' && 'Détails du bien immobilier'}
+          {formData.type === 'CAR' && 'Détails du véhicule'}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="p-6 space-y-6">
+        {/* TERRAIN */}
+        {formData.type === 'LAND' && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label className="text-gray-700 font-semibold flex items-center gap-2">
+                  <Ruler className="w-4 h-4" /> Superficie (m²) *
+                </Label>
+                <Input
+                  type="number"
+                  placeholder="500"
+                  value={formData.landDetails.surface}
+                  onChange={(e) => handleNestedChange('landDetails', 'surface', e.target.value)}
+                  className={`h-12 mt-2 rounded-xl border-2 ${errors.surface ? 'border-red-500' : 'border-gray-200'}`}
+                />
+              </div>
+              <div>
+                <Label className="text-gray-700 font-semibold">Longueur (m)</Label>
+                <Input
+                  type="number"
+                  placeholder="25"
+                  value={formData.landDetails.length}
+                  onChange={(e) => handleNestedChange('landDetails', 'length', e.target.value)}
+                  className="h-12 mt-2 rounded-xl border-2 border-gray-200"
+                />
+              </div>
+              <div>
+                <Label className="text-gray-700 font-semibold">Largeur (m)</Label>
+                <Input
+                  type="number"
+                  placeholder="20"
+                  value={formData.landDetails.width}
+                  onChange={(e) => handleNestedChange('landDetails', 'width', e.target.value)}
+                  className="h-12 mt-2 rounded-xl border-2 border-gray-200"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-gray-700 font-semibold">Topographie</Label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2">
+                {constants?.conditionOptions?.LAND?.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => handleNestedChange('landDetails', 'topography', opt.value)}
+                    className={`p-3 rounded-xl border-2 text-sm font-medium transition-all ${
+                      formData.landDetails.topography === opt.value
+                        ? 'border-kama-blue bg-kama-blue/5 text-kama-blue'
+                        : 'border-gray-200'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-gray-700 font-semibold mb-3 block">Accessibilité</Label>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {constants?.accessibilityOptions?.map((opt) => (
+                  <label
+                    key={opt.value}
+                    className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                      formData.landDetails.accessibility?.includes(opt.value)
+                        ? 'border-kama-gold bg-kama-gold/5'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <Checkbox
+                      checked={formData.landDetails.accessibility?.includes(opt.value)}
+                      onCheckedChange={() => handleArrayToggle('landDetails', 'accessibility', opt.value)}
+                    />
+                    <span className="text-sm">{opt.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl cursor-pointer">
+              <Checkbox
+                checked={formData.landDetails.boundaryMarked}
+                onCheckedChange={(checked) => handleNestedChange('landDetails', 'boundaryMarked', checked)}
+              />
+              <div>
+                <span className="font-semibold">Terrain borné</span>
+                <p className="text-sm text-gray-500">Le terrain a été délimité par un géomètre</p>
+              </div>
+            </label>
+          </>
+        )}
+
+        {/* IMMOBILIER */}
+        {formData.type === 'HOUSE' && (
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <Label className="text-gray-700 font-semibold">Surface (m²) *</Label>
+                <Input
+                  type="number"
+                  placeholder="120"
+                  value={formData.propertyDetails.surface}
+                  onChange={(e) => handleNestedChange('propertyDetails', 'surface', e.target.value)}
+                  className={`h-12 mt-2 rounded-xl border-2 ${errors.surface ? 'border-red-500' : 'border-gray-200'}`}
+                />
+              </div>
+              <div>
+                <Label className="text-gray-700 font-semibold">Chambres</Label>
+                <Input
+                  type="number"
+                  placeholder="3"
+                  value={formData.propertyDetails.bedrooms}
+                  onChange={(e) => handleNestedChange('propertyDetails', 'bedrooms', e.target.value)}
+                  className="h-12 mt-2 rounded-xl border-2 border-gray-200"
+                />
+              </div>
+              <div>
+                <Label className="text-gray-700 font-semibold">Salles de bain</Label>
+                <Input
+                  type="number"
+                  placeholder="2"
+                  value={formData.propertyDetails.bathrooms}
+                  onChange={(e) => handleNestedChange('propertyDetails', 'bathrooms', e.target.value)}
+                  className="h-12 mt-2 rounded-xl border-2 border-gray-200"
+                />
+              </div>
+              <div>
+                <Label className="text-gray-700 font-semibold">Année construction</Label>
+                <Input
+                  type="number"
+                  placeholder="2020"
+                  value={formData.propertyDetails.yearBuilt}
+                  onChange={(e) => handleNestedChange('propertyDetails', 'yearBuilt', e.target.value)}
+                  className="h-12 mt-2 rounded-xl border-2 border-gray-200"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label className="text-gray-700 font-semibold">État du bien</Label>
+                <Select 
+                  value={formData.propertyDetails.condition} 
+                  onValueChange={(v) => handleNestedChange('propertyDetails', 'condition', v)}
+                >
+                  <SelectTrigger className="h-12 mt-2 rounded-xl border-2 border-gray-200">
+                    <SelectValue placeholder="Sélectionner l'état" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {constants?.conditionOptions?.PROPERTY?.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-gray-700 font-semibold">Meublé</Label>
+                <Select 
+                  value={formData.propertyDetails.furnished} 
+                  onValueChange={(v) => handleNestedChange('propertyDetails', 'furnished', v)}
+                >
+                  <SelectTrigger className="h-12 mt-2 rounded-xl border-2 border-gray-200">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {constants?.furnishedOptions?.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-gray-700 font-semibold mb-3 block">Équipements</Label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {constants?.propertyAmenities?.map((opt) => (
+                  <label
+                    key={opt.value}
+                    className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                      formData.propertyDetails.amenities?.includes(opt.value)
+                        ? 'border-kama-gold bg-kama-gold/5'
+                        : 'border-gray-200'
+                    }`}
+                  >
+                    <Checkbox
+                      checked={formData.propertyDetails.amenities?.includes(opt.value)}
+                      onCheckedChange={() => handleArrayToggle('propertyDetails', 'amenities', opt.value)}
+                    />
+                    <span className="text-sm">{opt.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* VÉHICULE */}
+        {formData.type === 'CAR' && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label className="text-gray-700 font-semibold">Marque *</Label>
+                <Select 
+                  value={formData.vehicleDetails.brand} 
+                  onValueChange={(v) => handleNestedChange('vehicleDetails', 'brand', v)}
+                >
+                  <SelectTrigger className={`h-12 mt-2 rounded-xl border-2 ${errors.brand ? 'border-red-500' : 'border-gray-200'}`}>
+                    <SelectValue placeholder="Sélectionner" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {constants?.carBrands?.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-gray-700 font-semibold">Modèle</Label>
+                <Input
+                  placeholder="Corolla"
+                  value={formData.vehicleDetails.model}
+                  onChange={(e) => handleNestedChange('vehicleDetails', 'model', e.target.value)}
+                  className="h-12 mt-2 rounded-xl border-2 border-gray-200"
+                />
+              </div>
+              <div>
+                <Label className="text-gray-700 font-semibold flex items-center gap-2">
+                  <Calendar className="w-4 h-4" /> Année *
+                </Label>
+                <Input
+                  type="number"
+                  placeholder="2022"
+                  value={formData.vehicleDetails.year}
+                  onChange={(e) => handleNestedChange('vehicleDetails', 'year', e.target.value)}
+                  className={`h-12 mt-2 rounded-xl border-2 ${errors.year ? 'border-red-500' : 'border-gray-200'}`}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <Label className="text-gray-700 font-semibold">Kilométrage</Label>
+                <Input
+                  type="number"
+                  placeholder="50000"
+                  value={formData.vehicleDetails.mileage}
+                  onChange={(e) => handleNestedChange('vehicleDetails', 'mileage', e.target.value)}
+                  className="h-12 mt-2 rounded-xl border-2 border-gray-200"
+                />
+              </div>
+              <div>
+                <Label className="text-gray-700 font-semibold flex items-center gap-2">
+                  <Fuel className="w-4 h-4" /> Carburant
+                </Label>
+                <Select 
+                  value={formData.vehicleDetails.fuel} 
+                  onValueChange={(v) => handleNestedChange('vehicleDetails', 'fuel', v)}
+                >
+                  <SelectTrigger className="h-12 mt-2 rounded-xl border-2 border-gray-200">
+                    <SelectValue placeholder="Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {constants?.fuelTypes?.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-gray-700 font-semibold flex items-center gap-2">
+                  <Settings className="w-4 h-4" /> Transmission
+                </Label>
+                <Select 
+                  value={formData.vehicleDetails.transmission} 
+                  onValueChange={(v) => handleNestedChange('vehicleDetails', 'transmission', v)}
+                >
+                  <SelectTrigger className="h-12 mt-2 rounded-xl border-2 border-gray-200">
+                    <SelectValue placeholder="Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {constants?.transmissionTypes?.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-gray-700 font-semibold">État</Label>
+                <Select 
+                  value={formData.vehicleDetails.condition} 
+                  onValueChange={(v) => handleNestedChange('vehicleDetails', 'condition', v)}
+                >
+                  <SelectTrigger className="h-12 mt-2 rounded-xl border-2 border-gray-200">
+                    <SelectValue placeholder="État" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {constants?.conditionOptions?.VEHICLE?.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-gray-700 font-semibold mb-3 block">Options et équipements</Label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {constants?.vehicleFeatures?.map((opt) => (
+                  <label
+                    key={opt.value}
+                    className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                      formData.vehicleDetails.features?.includes(opt.value)
+                        ? 'border-kama-gold bg-kama-gold/5'
+                        : 'border-gray-200'
+                    }`}
+                  >
+                    <Checkbox
+                      checked={formData.vehicleDetails.features?.includes(opt.value)}
+                      onCheckedChange={() => handleArrayToggle('vehicleDetails', 'features', opt.value)}
+                    />
+                    <span className="text-sm">{opt.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+
+  // Step 4: Media
+  const renderStep4 = () => (
+    <Card className="border-0 shadow-xl rounded-2xl overflow-hidden">
+      <CardHeader className="bg-gradient-to-r from-slate-50 to-white border-b border-gray-100">
+        <CardTitle className="text-2xl flex items-center gap-3">
+          <div className="w-10 h-10 bg-kama-gold/10 rounded-xl flex items-center justify-center">
+            <span className="text-xl">4️⃣</span>
+          </div>
+          Photos et vidéo
+        </CardTitle>
+        <CardDescription>Ajoutez des médias pour attirer plus d'acheteurs</CardDescription>
+      </CardHeader>
+      <CardContent className="p-6 space-y-6">
+        {/* Info Box */}
+        <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-3">
+          <Info className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
+          <div className="text-sm text-blue-700">
+            <p className="font-semibold mb-1">Règles des médias</p>
+            <ul className="list-disc list-inside space-y-1">
+              <li>Maximum <strong>5 photos</strong> par annonce</li>
+              <li>Maximum <strong>1 vidéo</strong> par annonce</li>
+              <li>Les médias seront validés par notre équipe</li>
+            </ul>
+          </div>
+        </div>
+
+        <div>
+          <Label className="text-gray-700 font-semibold flex items-center gap-2">
+            <Image className="w-4 h-4" /> Photos (URLs séparées par des virgules)
+          </Label>
+          <Textarea
+            placeholder="https://exemple.com/photo1.jpg, https://exemple.com/photo2.jpg"
+            value={formData.images}
+            onChange={(e) => handleChange('images', e.target.value)}
+            rows={4}
+            className="mt-2 rounded-xl border-2 border-gray-200 focus:border-kama-blue"
+          />
+          <p className="text-sm text-gray-500 mt-2">
+            L'intégration Cloudinary permettra bientôt de téléverser directement vos photos
+          </p>
+        </div>
+
+        <div>
+          <Label className="text-gray-700 font-semibold flex items-center gap-2">
+            <Video className="w-4 h-4" /> Vidéo (URL)
+          </Label>
+          <Input
+            placeholder="https://exemple.com/video.mp4"
+            value={formData.video}
+            onChange={(e) => handleChange('video', e.target.value)}
+            className="h-12 mt-2 rounded-xl border-2 border-gray-200 focus:border-kama-blue"
+          />
+        </div>
+
+        {/* Documents Info */}
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+          <div className="flex items-start gap-3">
+            <FileText className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="font-semibold text-amber-800 mb-2">Documents requis</p>
+              <p className="text-sm text-amber-700 mb-3">
+                Après la création de votre annonce, vous devrez soumettre les documents suivants pour validation :
+              </p>
+              <ul className="text-sm text-amber-700 space-y-1">
+                {constants?.requiredDocuments?.[formData.type]?.map((doc) => (
+                  <li key={doc.value} className="flex items-center gap-2">
+                    {doc.required ? (
+                      <Badge className="bg-red-100 text-red-700 text-xs">Obligatoire</Badge>
+                    ) : (
+                      <Badge className="bg-gray-100 text-gray-600 text-xs">Optionnel</Badge>
+                    )}
+                    {doc.label}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50">
@@ -147,7 +933,6 @@ export default function CreateListingPage() {
       <div className="relative bg-gradient-to-br from-kama-blue via-blue-700 to-blue-900 overflow-hidden">
         <div className="absolute inset-0">
           <div className="absolute top-0 left-0 w-96 h-96 bg-kama-gold/20 rounded-full filter blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-0 right-0 w-96 h-96 bg-white/10 rounded-full filter blur-3xl animate-pulse" style={{animationDelay: '1s'}}></div>
         </div>
         
         <div className="relative container mx-auto px-4 py-12">
@@ -163,7 +948,7 @@ export default function CreateListingPage() {
               <PlusCircle className="w-8 h-8 text-kama-gold" />
             </div>
             <div>
-              <h1 className="text-4xl md:text-5xl font-black text-white">Publier une annonce</h1>
+              <h1 className="text-4xl font-black text-white">Publier une annonce</h1>
               <p className="text-blue-100 text-lg mt-1">Partagez votre bien avec des milliers d'acheteurs</p>
             </div>
           </div>
@@ -172,336 +957,59 @@ export default function CreateListingPage() {
 
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
-          {/* Progress Steps */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between max-w-md mx-auto">
-              {[1, 2, 3].map((step) => (
-                <div key={step} className="flex items-center">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all ${
-                    currentStep >= step 
-                      ? 'bg-gradient-to-r from-kama-gold to-yellow-500 text-white shadow-lg' 
-                      : 'bg-gray-200 text-gray-500'
-                  }`}>
-                    {currentStep > step ? <CheckCircle className="w-5 h-5" /> : step}
-                  </div>
-                  {step < 3 && (
-                    <div className={`w-20 h-1 mx-2 rounded ${
-                      currentStep > step ? 'bg-kama-gold' : 'bg-gray-200'
-                    }`}></div>
-                  )}
-                </div>
-              ))}
-            </div>
-            <div className="flex justify-between max-w-md mx-auto mt-2 text-xs text-gray-500">
-              <span>Type de bien</span>
-              <span>Détails</span>
-              <span>Médias</span>
-            </div>
-          </div>
-
+          {renderStepIndicator()}
+          
           <form onSubmit={handleSubmit}>
-            {/* Step 1: Type Selection */}
-            {currentStep === 1 && (
-              <Card className="border-0 shadow-xl rounded-2xl overflow-hidden animate-in fade-in slide-in-from-right">
-                <CardHeader className="bg-gradient-to-r from-slate-50 to-white border-b border-gray-100">
-                  <CardTitle className="text-2xl">Quel type de bien proposez-vous?</CardTitle>
-                  <CardDescription>Sélectionnez la catégorie qui correspond à votre annonce</CardDescription>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    {typeOptions.map((option) => {
-                      const Icon = option.icon;
-                      const isSelected = formData.type === option.value;
-                      return (
-                        <button
-                          key={option.value}
-                          type="button"
-                          onClick={() => setFormData({ ...formData, type: option.value })}
-                          className={`p-6 rounded-2xl border-2 transition-all text-left ${
-                            isSelected 
-                              ? 'border-kama-gold bg-kama-gold/5 shadow-lg' 
-                              : 'border-gray-200 hover:border-kama-gold/50 hover:bg-gray-50'
-                          }`}
-                        >
-                          <div className={`w-14 h-14 rounded-xl flex items-center justify-center mb-4 ${
-                            isSelected 
-                              ? 'bg-gradient-to-r from-kama-gold to-yellow-500 text-white' 
-                              : 'bg-gray-100 text-gray-600'
-                          }`}>
-                            <Icon className="w-7 h-7" />
-                          </div>
-                          <h3 className="font-bold text-lg mb-1">{option.label}</h3>
-                          <p className="text-sm text-gray-500">{option.description}</p>
-                        </button>
-                      );
-                    })}
-                  </div>
+            {currentStep === 1 && renderStep1()}
+            {currentStep === 2 && renderStep2()}
+            {currentStep === 3 && renderStep3()}
+            {currentStep === 4 && renderStep4()}
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, category: 'SALE' })}
-                      className={`p-4 rounded-xl border-2 transition-all ${
-                        formData.category === 'SALE'
-                          ? 'border-kama-blue bg-kama-blue/5'
-                          : 'border-gray-200 hover:border-kama-blue/50'
-                      }`}
-                    >
-                      <span className="text-2xl mb-2 block">🏷️</span>
-                      <span className="font-bold">Vente</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, category: 'RENT' })}
-                      className={`p-4 rounded-xl border-2 transition-all ${
-                        formData.category === 'RENT'
-                          ? 'border-kama-blue bg-kama-blue/5'
-                          : 'border-gray-200 hover:border-kama-blue/50'
-                      }`}
-                    >
-                      <span className="text-2xl mb-2 block">🏠</span>
-                      <span className="font-bold">Location</span>
-                    </button>
-                  </div>
-
-                  <div className="mt-8 flex justify-end">
-                    <Button
-                      type="button"
-                      onClick={() => setCurrentStep(2)}
-                      className="bg-gradient-to-r from-kama-blue to-blue-600 hover:shadow-lg text-white px-8 h-12 rounded-xl"
-                    >
-                      Continuer
-                      <Sparkles className="w-4 h-4 ml-2" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Step 2: Details */}
-            {currentStep === 2 && (
-              <Card className="border-0 shadow-xl rounded-2xl overflow-hidden animate-in fade-in slide-in-from-right">
-                <CardHeader className="bg-gradient-to-r from-slate-50 to-white border-b border-gray-100">
-                  <CardTitle className="text-2xl">Détails de l'annonce</CardTitle>
-                  <CardDescription>Renseignez les informations de votre bien</CardDescription>
-                </CardHeader>
-                <CardContent className="p-6 space-y-6">
-                  <div>
-                    <Label htmlFor="title" className="text-gray-700 font-semibold">Titre de l'annonce *</Label>
-                    <Input
-                      id="title"
-                      name="title"
-                      placeholder="Ex: Belle villa 4 chambres avec piscine"
-                      value={formData.title}
-                      onChange={handleChange}
-                      className={`h-12 mt-2 rounded-xl border-2 ${errors.title ? 'border-red-500' : 'border-gray-200 focus:border-kama-blue'}`}
-                    />
-                    {errors.title && (
-                      <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                        <AlertCircle className="w-4 h-4" />
-                        {errors.title}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <Label htmlFor="description" className="text-gray-700 font-semibold">Description *</Label>
-                    <Textarea
-                      id="description"
-                      name="description"
-                      placeholder="Décrivez votre bien en détail: état, équipements, avantages..."
-                      value={formData.description}
-                      onChange={handleChange}
-                      rows={5}
-                      className={`mt-2 rounded-xl border-2 ${errors.description ? 'border-red-500' : 'border-gray-200 focus:border-kama-blue'}`}
-                    />
-                    {errors.description && (
-                      <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                        <AlertCircle className="w-4 h-4" />
-                        {errors.description}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <Label htmlFor="price" className="text-gray-700 font-semibold">
-                      Prix (FCFA) {formData.category === 'RENT' && '/ mois'} *
-                    </Label>
-                    <Input
-                      id="price"
-                      name="price"
-                      type="number"
-                      placeholder="500000"
-                      value={formData.price}
-                      onChange={handleChange}
-                      className={`h-12 mt-2 rounded-xl border-2 ${errors.price ? 'border-red-500' : 'border-gray-200 focus:border-kama-blue'}`}
-                    />
-                    {errors.price && (
-                      <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                        <AlertCircle className="w-4 h-4" />
-                        {errors.price}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <Label htmlFor="city" className="text-gray-700 font-semibold">Ville *</Label>
-                      <Input
-                        id="city"
-                        name="city"
-                        placeholder="Libreville"
-                        value={formData.city}
-                        onChange={handleChange}
-                        className={`h-12 mt-2 rounded-xl border-2 ${errors.city ? 'border-red-500' : 'border-gray-200 focus:border-kama-blue'}`}
-                      />
-                      {errors.city && (
-                        <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                          <AlertCircle className="w-4 h-4" />
-                          {errors.city}
-                        </p>
-                      )}
+            {/* Navigation Buttons */}
+            <div className="mt-8 flex justify-between">
+              {currentStep > 1 ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={prevStep}
+                  className="px-8 h-12 rounded-xl"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Retour
+                </Button>
+              ) : (
+                <div></div>
+              )}
+              
+              {currentStep < totalSteps ? (
+                <Button
+                  type="button"
+                  onClick={nextStep}
+                  className="bg-gradient-to-r from-kama-blue to-blue-600 hover:shadow-lg text-white px-8 h-12 rounded-xl"
+                >
+                  Continuer
+                  <ChevronRight className="w-4 h-4 ml-2" />
+                </Button>
+              ) : (
+                <Button
+                  type="submit"
+                  className="bg-gradient-to-r from-kama-gold via-yellow-500 to-kama-gold hover:shadow-lg hover:shadow-kama-gold/30 text-white px-8 h-14 rounded-xl font-bold"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Publication en cours...
                     </div>
-
-                    <div>
-                      <Label htmlFor="address" className="text-gray-700 font-semibold">Adresse / Quartier *</Label>
-                      <Input
-                        id="address"
-                        name="address"
-                        placeholder="Quartier, rue..."
-                        value={formData.address}
-                        onChange={handleChange}
-                        className={`h-12 mt-2 rounded-xl border-2 ${errors.address ? 'border-red-500' : 'border-gray-200 focus:border-kama-blue'}`}
-                      />
-                      {errors.address && (
-                        <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                          <AlertCircle className="w-4 h-4" />
-                          {errors.address}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="mt-8 flex justify-between">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setCurrentStep(1)}
-                      className="px-8 h-12 rounded-xl"
-                    >
-                      <ArrowLeft className="w-4 h-4 mr-2" />
-                      Retour
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={() => setCurrentStep(3)}
-                      className="bg-gradient-to-r from-kama-blue to-blue-600 hover:shadow-lg text-white px-8 h-12 rounded-xl"
-                    >
-                      Continuer
-                      <Sparkles className="w-4 h-4 ml-2" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Step 3: Media */}
-            {currentStep === 3 && (
-              <Card className="border-0 shadow-xl rounded-2xl overflow-hidden animate-in fade-in slide-in-from-right">
-                <CardHeader className="bg-gradient-to-r from-slate-50 to-white border-b border-gray-100">
-                  <CardTitle className="text-2xl">Photos et vidéo</CardTitle>
-                  <CardDescription>Ajoutez des médias pour rendre votre annonce attrayante</CardDescription>
-                </CardHeader>
-                <CardContent className="p-6 space-y-6">
-                  {/* Info Box */}
-                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-3">
-                    <Info className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
-                    <div className="text-sm text-blue-700">
-                      <p className="font-semibold mb-1">Règles des médias</p>
-                      <ul className="list-disc list-inside space-y-1">
-                        <li>Maximum <strong>5 photos</strong> par annonce</li>
-                        <li>Maximum <strong>1 vidéo</strong> par annonce</li>
-                        <li>Les médias seront validés par notre équipe</li>
-                      </ul>
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="images" className="text-gray-700 font-semibold flex items-center gap-2">
-                      <Image className="w-4 h-4" />
-                      Photos ({imageCount}/5)
-                    </Label>
-                    <Textarea
-                      id="images"
-                      name="images"
-                      placeholder="Entrez les URLs de vos images, séparées par des virgules:
-https://exemple.com/photo1.jpg,
-https://exemple.com/photo2.jpg"
-                      value={formData.images}
-                      onChange={handleChange}
-                      rows={4}
-                      className="mt-2 rounded-xl border-2 border-gray-200 focus:border-kama-blue"
-                    />
-                    {imageCount > 5 && (
-                      <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                        <AlertCircle className="w-4 h-4" />
-                        Maximum 5 photos autorisées
-                      </p>
-                    )}
-                    <p className="text-sm text-gray-500 mt-2">
-                      Ajoutez des URLs d'images de haute qualité pour attirer plus d'acheteurs
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="video" className="text-gray-700 font-semibold flex items-center gap-2">
-                      <Video className="w-4 h-4" />
-                      Vidéo (optionnel)
-                    </Label>
-                    <Input
-                      id="video"
-                      name="video"
-                      placeholder="https://exemple.com/video.mp4"
-                      value={formData.video}
-                      onChange={handleChange}
-                      className="h-12 mt-2 rounded-xl border-2 border-gray-200 focus:border-kama-blue"
-                    />
-                    <p className="text-sm text-gray-500 mt-2">
-                      Une vidéo de présentation augmente vos chances de vente
-                    </p>
-                  </div>
-
-                  <div className="mt-8 flex justify-between">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setCurrentStep(2)}
-                      className="px-8 h-12 rounded-xl"
-                    >
-                      <ArrowLeft className="w-4 h-4 mr-2" />
-                      Retour
-                    </Button>
-                    <Button
-                      type="submit"
-                      className="bg-gradient-to-r from-kama-gold via-yellow-500 to-kama-gold hover:shadow-lg hover:shadow-kama-gold/30 text-white px-8 h-14 rounded-xl font-bold"
-                      disabled={loading || imageCount > 5}
-                    >
-                      {loading ? (
-                        <div className="flex items-center gap-2">
-                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          Publication en cours...
-                        </div>
-                      ) : (
-                        <>
-                          <PlusCircle className="w-5 h-5 mr-2" />
-                          Publier l'annonce
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                  ) : (
+                    <>
+                      <PlusCircle className="w-5 h-5 mr-2" />
+                      Publier l'annonce
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
           </form>
         </div>
       </div>
