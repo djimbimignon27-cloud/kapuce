@@ -4,10 +4,8 @@
     "slug": "kama-gabon",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#0B3D91"
     },
@@ -20,17 +18,35 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0B3D91"
       },
       "package": "com.kama.gabon",
-      "versionCode": 1
+      "versionCode": 1,
+      "permissions": [
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "bundler": "metro"
     },
     "extra": {
-      "apiUrl": "https://digital-marketplace-186.preview.emergentagent.com/api"
-    }
+      "apiUrl": "https://digital-marketplace-186.preview.emergentagent.com/api",
+      "eas": {
+        "projectId": "kama-gabon"
+      }
+    },
+    "plugins": [
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "L'application a besoin d'accéder à vos photos pour les annonces."
+        }
+      ]
+    ]
   }
 }

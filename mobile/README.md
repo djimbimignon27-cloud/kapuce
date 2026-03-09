@@ -1,202 +1,184 @@
-# 📱 KAMA Mobile - Application React Native
+# KAMA Mobile - Application Android/iOS
 
-Application mobile officielle de KAMA pour Android (et iOS dans le futur).
+Application mobile officielle de la plateforme KAMA pour la location et vente de biens immobiliers, véhicules et terrains au Gabon.
 
-## 🚀 Technologies utilisées
+## 📱 Fonctionnalités
 
-- **React Native** avec Expo
-- **React Navigation** pour la navigation
-- **Expo SecureStore** pour le stockage sécurisé
-- **Axios** pour les appels API
+- **Navigation intuitive** avec barre d'onglets
+- **Authentification sécurisée** (Login/Register)
+- **Recherche d'annonces** par catégorie (Immobilier, Véhicules, Terrains)
+- **Liste des favoris** personnalisée
+- **Détails des annonces** avec galerie photos
+- **Profil utilisateur** avec gestion du compte
 
-## 📁 Structure du projet
+## 🎨 Design
 
-```
-mobile/
-├── App.js                 # Point d'entrée
-├── app.json              # Configuration Expo
-├── package.json          # Dépendances
-├── src/
-│   ├── context/
-│   │   └── AuthContext.js    # Gestion authentification
-│   ├── screens/
-│   │   ├── SplashScreen.js       # Écran de démarrage
-│   │   ├── ChooseAccountScreen.js # Choix type de compte
-│   │   ├── LoginScreen.js        # Connexion
-│   │   ├── RegisterScreen.js     # Inscription
-│   │   ├── HomeScreen.js         # Accueil
-│   │   ├── ListingsScreen.js     # Liste annonces
-│   │   ├── ListingDetailScreen.js # Détail annonce
-│   │   ├── CreateListingScreen.js # Création annonce
-│   │   ├── ProfileScreen.js      # Profil utilisateur
-│   │   └── FavoritesScreen.js    # Favoris
-│   └── services/
-│       └── api.js           # Configuration API
-└── assets/                  # Images et ressources
-```
+L'application utilise les couleurs officielles KAMA :
+- **Bleu foncé** : `#0B3D91`
+- **Doré** : `#C9A227`
 
-## 🛠️ Installation
+## 🛠️ Prérequis
 
-### Prérequis
-- Node.js 18+
-- npm ou yarn
-- Expo CLI (`npm install -g expo-cli`)
-- EAS CLI (`npm install -g eas-cli`)
+1. **Node.js** (v18+)
+2. **npm** ou **yarn**
+3. **Expo CLI** : `npm install -g expo-cli`
+4. **EAS CLI** : `npm install -g eas-cli`
+5. **Compte Expo** : https://expo.dev/signup
 
-### Étapes
+## 📦 Installation
 
-1. **Installer les dépendances**
 ```bash
 cd mobile
 npm install
-# ou
-yarn install
 ```
 
-2. **Démarrer en mode développement**
+## 🚀 Développement
+
+### Lancer l'application en mode développement
+
 ```bash
+# Démarrer le serveur Expo
 npx expo start
+
+# Scanner le QR code avec Expo Go (Android/iOS)
 ```
 
-3. **Tester sur un appareil Android**
-   - Téléchargez l'app "Expo Go" sur votre téléphone
-   - Scannez le QR code affiché dans le terminal
-
-## 📦 Build pour production (Android)
-
-### 1. Créer un compte Expo
+### Tester sur simulateur
 
 ```bash
-npx expo register
-# ou
-npx expo login
+# Android
+npx expo start --android
+
+# iOS (Mac uniquement)
+npx expo start --ios
 ```
 
-### 2. Configurer EAS Build
+## 📲 Build Android (APK)
+
+### 1. Se connecter à Expo
+
+```bash
+eas login
+```
+
+### 2. Configurer le projet
 
 ```bash
 eas build:configure
 ```
 
-### 3. Créer le fichier eas.json
-
-```json
-{
-  "cli": {
-    "version": ">= 5.0.0"
-  },
-  "build": {
-    "development": {
-      "developmentClient": true,
-      "distribution": "internal"
-    },
-    "preview": {
-      "distribution": "internal"
-    },
-    "production": {
-      "android": {
-        "buildType": "apk"
-      }
-    }
-  },
-  "submit": {
-    "production": {}
-  }
-}
-```
-
-### 4. Générer l'APK
+### 3. Générer l'APK (Preview)
 
 ```bash
-# APK pour tests
+# Build APK pour test interne
 eas build --platform android --profile preview
+```
 
-# AAB pour Play Store
+Le build sera effectué sur les serveurs Expo. Une fois terminé, vous recevrez un lien pour télécharger l'APK.
+
+### 4. Build Production (AAB pour Play Store)
+
+```bash
 eas build --platform android --profile production
 ```
 
-## 🏪 Publication sur Google Play Store
+## 🍎 Build iOS
 
-### Prérequis
-- Compte Google Play Console (25$ une fois)
-- Créer le compte: https://play.google.com/console/signup
+### 1. Générer le build iOS
 
-### Étapes de publication
+```bash
+# Nécessite un compte Apple Developer ($99/an)
+eas build --platform ios --profile production
+```
 
-1. **Créer une nouvelle application** dans la Play Console
+### 2. Soumettre sur l'App Store
 
-2. **Préparer les assets requis**:
-   - Icône de l'app (512x512 PNG)
-   - Feature graphic (1024x500 PNG)
-   - Screenshots (min 2, différentes tailles)
-   - Description courte (80 caractères max)
-   - Description complète (4000 caractères max)
+```bash
+eas submit --platform ios
+```
 
-3. **Remplir les informations**:
-   - Nom de l'app: KAMA
-   - Catégorie: Immobilier / Petites annonces
-   - Pays: Gabon (et autres)
+## 📤 Publication sur Google Play Store
 
-4. **Configurer la version**:
-   - Uploader le fichier AAB généré
-   - Notes de version
+### 1. Créer un compte Google Play Console
 
-5. **Passer les tests**:
-   - Classification du contenu
-   - Politique de confidentialité
-   - Publicités (déclarer si présentes)
+- Accédez à https://play.google.com/console
+- Payez les frais d'inscription ($25 unique)
 
-6. **Soumettre pour examen**
-   - Délai: 1-7 jours ouvrés
+### 2. Créer une application
 
-## 🎨 Assets à créer
+- Nouvelle application > Android
+- Remplir les informations de l'application
 
-### Icône de l'app
-- `assets/icon.png` - 1024x1024 PNG
-- `assets/adaptive-icon.png` - 1024x1024 PNG (Android)
-- `assets/splash.png` - 1284x2778 PNG
+### 3. Configurer le fichier de clé
 
-### Pour le Play Store
-- Icône HD: 512x512 PNG
-- Feature Graphic: 1024x500 PNG
-- Screenshots: 
-  - Téléphone: 1080x1920 (portrait)
-  - Tablette 7": 1200x1920
-  - Tablette 10": 1600x2560
+Créez un fichier `google-service-account.json` pour l'upload automatique :
+
+```bash
+# Soumettre automatiquement
+eas submit --platform android
+```
+
+Ou uploadez manuellement l'AAB via la console.
 
 ## 🔧 Configuration API
 
-L'API backend est configurée dans `src/services/api.js`:
-
-```javascript
-const API_URL = 'https://digital-marketplace-186.preview.emergentagent.com/api';
+L'application est configurée pour se connecter à :
+```
+https://digital-marketplace-186.preview.emergentagent.com/api
 ```
 
-Pour la production, mettez à jour avec votre domaine personnalisé.
+Pour modifier l'URL de l'API, éditez `/src/services/api.js`.
 
-## 📝 Fonctionnalités implémentées
+## 📁 Structure du projet
 
-- ✅ Authentification (login/register)
-- ✅ Choix du type de compte (User/Owner/Agency)
-- ✅ Liste des annonces avec filtres
-- ✅ Détail d'une annonce
-- ✅ Profil utilisateur
-- ✅ Favoris (interface)
-- ✅ Navigation par onglets
-- ✅ Thème KAMA (couleurs officielles)
+```
+mobile/
+├── App.js                    # Point d'entrée
+├── app.json                  # Configuration Expo
+├── eas.json                  # Configuration EAS Build
+├── package.json
+└── src/
+    ├── context/
+    │   └── AuthContext.js    # Gestion authentification
+    ├── screens/
+    │   ├── SplashScreen.js   # Écran de chargement
+    │   ├── LoginScreen.js    # Connexion
+    │   ├── RegisterScreen.js # Inscription
+    │   ├── HomeScreen.js     # Accueil
+    │   ├── ListingsScreen.js # Liste des annonces
+    │   ├── ListingDetailScreen.js
+    │   ├── CreateListingScreen.js
+    │   ├── FavoritesScreen.js
+    │   └── ProfileScreen.js
+    └── services/
+        └── api.js            # Configuration Axios
+```
 
-## 🔜 Fonctionnalités à venir
+## 🔒 Sécurité
 
-- [ ] Création d'annonces depuis l'app
-- [ ] Upload de photos
-- [ ] Notifications push
-- [ ] Chat intégré
-- [ ] Paiements in-app
+- Les tokens sont stockés avec `expo-secure-store`
+- Communication HTTPS avec l'API
+- Authentification JWT
+
+## 🐛 Dépannage
+
+### Erreur "Unable to resolve module"
+```bash
+rm -rf node_modules
+npm install
+npx expo start --clear
+```
+
+### Build échoue sur EAS
+Vérifiez que vous avez la dernière version d'EAS CLI :
+```bash
+npm install -g eas-cli@latest
+```
 
 ## 📞 Support
 
-Pour toute question: contact@kama-gabon.com
+Pour toute question technique, contactez l'équipe KAMA.
 
 ---
 
-© 2024 KAMA - Transactions Sécurisées au Gabon 🇬🇦
+**KAMA** - La plateforme de référence au Gabon 🇬🇦

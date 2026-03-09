@@ -14,7 +14,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { 
   Home, Car, MapPin, Search, Filter, ArrowLeft, CheckCircle, Eye, TrendingUp, 
   Sparkles, SlidersHorizontal, Grid3X3, List, X, ChevronDown, ChevronUp,
-  Ruler, BedDouble, Bath, Calendar, Fuel, Settings, Trees
+  Ruler, BedDouble, Bath, Calendar, Fuel, Settings, Trees, Navigation, Loader2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Toaster } from '@/components/ui/toaster';
@@ -62,6 +62,10 @@ function ListingsContent() {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [pagination, setPagination] = useState({ page: 1, total: 0, pages: 0 });
   
+  // Géolocalisation
+  const [userLocation, setUserLocation] = useState({ lat: null, lng: null, city: null });
+  const [locationStatus, setLocationStatus] = useState('pending'); // pending, granted, denied
+  
   // Filtres de base
   const [filters, setFilters] = useState({
     search: searchParams.get('search') || '',
@@ -101,11 +105,54 @@ function ListingsContent() {
   });
 
   useEffect(() => {
-    fetchListings();
+    // Demander la géolocalisation
+    requestGeolocation();
   }, []);
+
+  useEffect(() => {
+    // Charger les annonces quand la localisation est déterminée
+    if (locationStatus !== 'pending') {
+      fetchListings();
+    }
+  }, [locationStatus]);
+
+  const requestGeolocation = () => {
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+            city: null,
+          });
+          setLocationStatus('granted');
+          toast({
+            title: '📍 Localisation activée',
+            description: 'Les annonces près de vous seront affichées en priorité',
+          });
+        },
+        (error) => {
+          console.log('Géolocalisation refusée ou indisponible:', error.message);
+          setLocationStatus('denied');
+        },
+        { timeout: 5000, enableHighAccuracy: false }
+      );
+    } else {
+      setLocationStatus('denied');
+    }
+  };
 
   const buildQueryParams = () => {
     const params = new URLSearchParams();
+    
+    // Ajouter la géolocalisation si disponible
+    if (userLocation.lat && userLocation.lng) {
+      params.append('lat', userLocation.lat.toString());
+      params.append('lng', userLocation.lng.toString());
+    }
+    if (userLocation.city) {
+      params.append('userCity', userLocation.city);
+    }
     
     // Filtres de base
     if (filters.search) params.append('search', filters.search);
@@ -272,6 +319,29 @@ function ListingsContent() {
               <p className="text-blue-100 text-lg mt-1">Trouvez exactement ce que vous cherchez</p>
             </div>
           </div>
+          
+          {/* Indicateur de localisation */}
+          {locationStatus === 'pending' && (
+            <div className="mt-4 flex items-center gap-2 text-blue-100">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span className="text-sm">Détection de votre position...</span>
+            </div>
+          )}
+          {locationStatus === 'granted' && userLocation.lat && (
+            <div className="mt-4 flex items-center gap-2 bg-green-500/20 backdrop-blur-md rounded-full px-4 py-2 w-fit">
+              <Navigation className="w-4 h-4 text-green-300" />
+              <span className="text-sm text-green-100">Annonces triées par proximité</span>
+            </div>
+          )}
+          {locationStatus === 'denied' && (
+            <button 
+              onClick={requestGeolocation}
+              className="mt-4 flex items-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full px-4 py-2 text-blue-100 hover:text-white transition-colors"
+            >
+              <MapPin className="w-4 h-4" />
+              <span className="text-sm">Activer la localisation</span>
+            </button>
+          )}
         </div>
       </div>
 

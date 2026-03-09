@@ -2,6 +2,48 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import Listing from '@/lib/models/Listing';
 
+// Coordonnées des villes du Gabon pour le tri par proximité
+const CITY_COORDINATES = {
+  'Libreville': { lat: 0.4162, lng: 9.4673 },
+  'Port-Gentil': { lat: -0.7193, lng: 8.7815 },
+  'Franceville': { lat: -1.6333, lng: 13.5833 },
+  'Oyem': { lat: 1.6000, lng: 11.5833 },
+  'Moanda': { lat: -1.5667, lng: 13.2000 },
+  'Lambaréné': { lat: -0.7000, lng: 10.2333 },
+  'Mouila': { lat: -1.8667, lng: 11.0500 },
+  'Tchibanga': { lat: -2.8500, lng: 11.0333 },
+  'Koulamoutou': { lat: -1.1333, lng: 12.4667 },
+  'Makokou': { lat: 0.5667, lng: 12.8667 },
+};
+
+// Calculer la distance entre deux points (formule Haversine)
+function calculateDistance(lat1, lng1, lat2, lng2) {
+  const R = 6371; // Rayon de la Terre en km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLng/2) * Math.sin(dLng/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
+// Trouver la ville la plus proche des coordonnées
+function findNearestCity(lat, lng) {
+  let nearestCity = 'Libreville';
+  let minDistance = Infinity;
+  
+  for (const [city, coords] of Object.entries(CITY_COORDINATES)) {
+    const distance = calculateDistance(lat, lng, coords.lat, coords.lng);
+    if (distance < minDistance) {
+      minDistance = distance;
+      nearestCity = city;
+    }
+  }
+  
+  return { city: nearestCity, distance: minDistance };
+}
+
 export async function GET(request) {
   try {
     await connectDB();
@@ -9,6 +51,20 @@ export async function GET(request) {
 
     // Construire le filtre de recherche
     const filter = { status: 'ACTIVE' };
+
+    // Paramètres de géolocalisation
+    const userLat = parseFloat(searchParams.get('lat'));
+    const userLng = parseFloat(searchParams.get('lng'));
+    const userCity = searchParams.get('userCity'); // Ville détectée côté client
+    
+    // Déterminer la ville de l'utilisateur
+    let detectedCity = null;
+    if (userLat && userLng && !isNaN(userLat) && !isNaN(userLng)) {
+      const nearest = findNearestCity(userLat, userLng);
+      detectedCity = nearest.city;
+    } else if (userCity) {
+      detectedCity = userCity;
+    }
 
     // Filtres de base
     const city = searchParams.get('city');
@@ -128,23 +184,54 @@ export async function GET(request) {
     // Tri
     const sortBy = searchParams.get('sortBy') || 'createdAt';
     const sortOrder = searchParams.get('sortOrder') === 'asc' ? 1 : -1;
-    const sortObj = { [sortBy]: sortOrder };
+    let sortObj = { [sortBy]: sortOrder };
 
     // Pagination
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '12');
     const skip = (page - 1) * limit;
 
-    const listings = await Listing.find(filter)
+    // Récupérer toutes les annonces correspondant aux filtres
+    let listings = await Listing.find(filter)
       .populate('ownerId', 'fullName email profilePicture isVerified')
       .sort(sortObj)
-      .skip(skip)
-      .limit(limit);
+      .lean();
 
-    const total = await Listing.countDocuments(filter);
+    // ========================================
+    // TRI PAR PROXIMITÉ GÉOGRAPHIQUE
+    // ========================================
+    if (detectedCity && !city) {
+      // Si l'utilisateur n'a pas filtré par ville spécifique, trier par proximité
+      const userCoords = CITY_COORDINATES[detectedCity] || CITY_COORDINATES['Libreville'];
+      
+      listings = listings.map(listing => {
+        const listingCoords = CITY_COORDINATES[listing.city] || { lat: 0, lng: 0 };
+        const distance = calculateDistance(
+          userCoords.lat, userCoords.lng,
+          listingCoords.lat, listingCoords.lng
+        );
+        return { ...listing, _distance: distance };
+      });
+      
+      // Trier: d'abord par proximité, puis par date
+      listings.sort((a, b) => {
+        // Priorité aux annonces de la même ville
+        if (a.city === detectedCity && b.city !== detectedCity) return -1;
+        if (b.city === detectedCity && a.city !== detectedCity) return 1;
+        // Puis par distance
+        if (a._distance !== b._distance) return a._distance - b._distance;
+        // Enfin par date
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      });
+    }
+
+    const total = listings.length;
+    
+    // Appliquer la pagination après le tri
+    const paginatedListings = listings.slice(skip, skip + limit);
 
     return NextResponse.json({
-      listings,
+      listings: paginatedListings,
       pagination: {
         page,
         limit,
@@ -160,6 +247,10 @@ export async function GET(request) {
         maxPrice,
         verified,
         search,
+      },
+      location: {
+        detectedCity,
+        userProvided: !!userCity || (!!userLat && !!userLng),
       },
     });
   } catch (error) {
