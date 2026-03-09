@@ -1,14 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Home, Car, MapPin, Search, Filter, ArrowLeft, CheckCircle, Eye, TrendingUp, Sparkles, SlidersHorizontal, Grid3X3, List } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
+import { Checkbox } from '@/components/ui/checkbox';
+import { 
+  Home, Car, MapPin, Search, Filter, ArrowLeft, CheckCircle, Eye, TrendingUp, 
+  Sparkles, SlidersHorizontal, Grid3X3, List, X, ChevronDown, ChevronUp,
+  Ruler, BedDouble, Bath, Calendar, Fuel, Settings, Trees
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Toaster } from '@/components/ui/toaster';
 
@@ -20,37 +27,136 @@ const DEMO_IMAGES = [
   'https://images.pexels.com/photos/17174768/pexels-photo-17174768.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940',
 ];
 
-export default function ListingsPage() {
+// Options constantes
+const CITIES = ['Libreville', 'Port-Gentil', 'Franceville', 'Oyem', 'Moanda', 'Lambaréné', 'Mouila'];
+const CAR_BRANDS = [
+  { value: 'TOYOTA', label: 'Toyota' },
+  { value: 'NISSAN', label: 'Nissan' },
+  { value: 'MERCEDES', label: 'Mercedes-Benz' },
+  { value: 'BMW', label: 'BMW' },
+  { value: 'HYUNDAI', label: 'Hyundai' },
+  { value: 'KIA', label: 'Kia' },
+  { value: 'FORD', label: 'Ford' },
+  { value: 'PEUGEOT', label: 'Peugeot' },
+  { value: 'RENAULT', label: 'Renault' },
+  { value: 'OTHER', label: 'Autre' },
+];
+const FUEL_TYPES = [
+  { value: 'GASOLINE', label: 'Essence' },
+  { value: 'DIESEL', label: 'Diesel' },
+  { value: 'HYBRID', label: 'Hybride' },
+  { value: 'ELECTRIC', label: 'Électrique' },
+];
+const TRANSMISSIONS = [
+  { value: 'MANUAL', label: 'Manuelle' },
+  { value: 'AUTOMATIC', label: 'Automatique' },
+];
+
+function ListingsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('grid');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [pagination, setPagination] = useState({ page: 1, total: 0, pages: 0 });
+  
+  // Filtres de base
   const [filters, setFilters] = useState({
     search: searchParams.get('search') || '',
     type: searchParams.get('type') || 'all',
     category: searchParams.get('category') || 'all',
-    city: searchParams.get('city') || '',
+    city: searchParams.get('city') || 'all',
+    minPrice: '',
+    maxPrice: '',
+    verified: false,
+  });
+  
+  // Filtres avancés pour Terrains
+  const [landFilters, setLandFilters] = useState({
+    minSurface: '',
+    maxSurface: '',
+    topography: 'all',
+    boundaryMarked: false,
+  });
+  
+  // Filtres avancés pour Immobilier
+  const [houseFilters, setHouseFilters] = useState({
+    minSurface: '',
+    maxSurface: '',
+    minBedrooms: '',
+    minBathrooms: '',
+    furnished: 'all',
+  });
+  
+  // Filtres avancés pour Véhicules
+  const [carFilters, setCarFilters] = useState({
+    brand: 'all',
+    minYear: '',
+    maxYear: '',
+    maxMileage: '',
+    fuel: 'all',
+    transmission: 'all',
   });
 
   useEffect(() => {
     fetchListings();
   }, []);
 
+  const buildQueryParams = () => {
+    const params = new URLSearchParams();
+    
+    // Filtres de base
+    if (filters.search) params.append('search', filters.search);
+    if (filters.type && filters.type !== 'all') params.append('type', filters.type);
+    if (filters.category && filters.category !== 'all') params.append('category', filters.category);
+    if (filters.city && filters.city !== 'all') params.append('city', filters.city);
+    if (filters.minPrice) params.append('minPrice', filters.minPrice);
+    if (filters.maxPrice) params.append('maxPrice', filters.maxPrice);
+    if (filters.verified) params.append('verified', 'true');
+    
+    // Filtres spécifiques selon le type
+    if (filters.type === 'LAND') {
+      if (landFilters.minSurface) params.append('minSurface', landFilters.minSurface);
+      if (landFilters.maxSurface) params.append('maxSurface', landFilters.maxSurface);
+      if (landFilters.topography && landFilters.topography !== 'all') params.append('topography', landFilters.topography);
+      if (landFilters.boundaryMarked) params.append('boundaryMarked', 'true');
+    }
+    
+    if (filters.type === 'HOUSE') {
+      if (houseFilters.minSurface) params.append('minSurface', houseFilters.minSurface);
+      if (houseFilters.maxSurface) params.append('maxSurface', houseFilters.maxSurface);
+      if (houseFilters.minBedrooms) params.append('minBedrooms', houseFilters.minBedrooms);
+      if (houseFilters.minBathrooms) params.append('minBathrooms', houseFilters.minBathrooms);
+      if (houseFilters.furnished && houseFilters.furnished !== 'all') params.append('furnished', houseFilters.furnished);
+    }
+    
+    if (filters.type === 'CAR') {
+      if (carFilters.brand && carFilters.brand !== 'all') params.append('brand', carFilters.brand);
+      if (carFilters.minYear) params.append('minYear', carFilters.minYear);
+      if (carFilters.maxYear) params.append('maxYear', carFilters.maxYear);
+      if (carFilters.maxMileage) params.append('maxMileage', carFilters.maxMileage);
+      if (carFilters.fuel && carFilters.fuel !== 'all') params.append('fuel', carFilters.fuel);
+      if (carFilters.transmission && carFilters.transmission !== 'all') params.append('transmission', carFilters.transmission);
+    }
+    
+    return params;
+  };
+
   const fetchListings = async () => {
+    setLoading(true);
     try {
-      const params = new URLSearchParams();
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value && value !== 'all') params.append(key, value.toString());
-      });
-      
+      const params = buildQueryParams();
       const url = params.toString() ? `/api/listings/search?${params}` : '/api/listings';
       const response = await fetch(url);
       const data = await response.json();
       
       if (response.ok) {
         setListings(data.listings || []);
+        if (data.pagination) {
+          setPagination(data.pagination);
+        }
       }
     } catch (error) {
       console.error('Erreur:', error);
@@ -65,15 +171,47 @@ export default function ListingsPage() {
   };
 
   const handleSearch = () => {
-    setLoading(true);
     fetchListings();
+  };
+
+  const resetFilters = () => {
+    setFilters({
+      search: '',
+      type: 'all',
+      category: 'all',
+      city: 'all',
+      minPrice: '',
+      maxPrice: '',
+      verified: false,
+    });
+    setLandFilters({
+      minSurface: '',
+      maxSurface: '',
+      topography: 'all',
+      boundaryMarked: false,
+    });
+    setHouseFilters({
+      minSurface: '',
+      maxSurface: '',
+      minBedrooms: '',
+      minBathrooms: '',
+      furnished: 'all',
+    });
+    setCarFilters({
+      brand: 'all',
+      minYear: '',
+      maxYear: '',
+      maxMileage: '',
+      fuel: 'all',
+      transmission: 'all',
+    });
   };
 
   const getTypeIcon = (type) => {
     switch (type) {
       case 'HOUSE': return <Home className="w-5 h-5" />;
       case 'CAR': return <Car className="w-5 h-5" />;
-      case 'LAND': return <MapPin className="w-5 h-5" />;
+      case 'LAND': return <Trees className="w-5 h-5" />;
       default: return <Home className="w-5 h-5" />;
     }
   };
@@ -87,13 +225,31 @@ export default function ListingsPage() {
     }
   };
 
+  const hasActiveFilters = () => {
+    const baseActive = filters.search || filters.type !== 'all' || filters.category !== 'all' || 
+                       filters.city !== 'all' || filters.minPrice || filters.maxPrice || filters.verified;
+    
+    if (filters.type === 'LAND') {
+      return baseActive || landFilters.minSurface || landFilters.maxSurface || 
+             landFilters.topography !== 'all' || landFilters.boundaryMarked;
+    }
+    if (filters.type === 'HOUSE') {
+      return baseActive || houseFilters.minSurface || houseFilters.maxSurface || 
+             houseFilters.minBedrooms || houseFilters.minBathrooms || houseFilters.furnished !== 'all';
+    }
+    if (filters.type === 'CAR') {
+      return baseActive || carFilters.brand !== 'all' || carFilters.minYear || carFilters.maxYear || 
+             carFilters.maxMileage || carFilters.fuel !== 'all' || carFilters.transmission !== 'all';
+    }
+    return baseActive;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50">
       <Toaster />
       
       {/* Header */}
       <div className="relative bg-gradient-to-br from-kama-blue via-blue-700 to-blue-900 overflow-hidden">
-        {/* Background Elements */}
         <div className="absolute inset-0">
           <div className="absolute top-0 right-0 w-96 h-96 bg-kama-gold/20 rounded-full filter blur-3xl animate-pulse"></div>
           <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/10 rounded-full filter blur-3xl animate-pulse" style={{animationDelay: '1s'}}></div>
@@ -112,32 +268,43 @@ export default function ListingsPage() {
               <TrendingUp className="w-8 h-8 text-kama-gold" />
             </div>
             <div>
-              <h1 className="text-4xl md:text-5xl font-black text-white">Toutes les annonces</h1>
-              <p className="text-blue-100 text-lg mt-1">Découvrez des milliers d'opportunités vérifiées</p>
+              <h1 className="text-4xl md:text-5xl font-black text-white">Recherche avancée</h1>
+              <p className="text-blue-100 text-lg mt-1">Trouvez exactement ce que vous cherchez</p>
             </div>
           </div>
         </div>
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        {/* Search & Filters */}
+        {/* Search & Filters Card */}
         <Card className="mb-8 shadow-xl border-0 rounded-2xl overflow-hidden">
           <div className="bg-gradient-to-r from-slate-50 to-white p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2.5 bg-gradient-to-br from-kama-blue to-blue-600 rounded-xl shadow-lg">
-                <SlidersHorizontal className="w-5 h-5 text-white" />
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-gradient-to-br from-kama-blue to-blue-600 rounded-xl shadow-lg">
+                  <SlidersHorizontal className="w-5 h-5 text-white" />
+                </div>
+                <h2 className="text-xl font-bold text-gray-900">Filtres de recherche</h2>
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Filtrer les résultats</h2>
+              {hasActiveFilters() && (
+                <Button variant="ghost" onClick={resetFilters} className="text-red-500 hover:text-red-600 hover:bg-red-50">
+                  <X className="w-4 h-4 mr-2" />
+                  Réinitialiser
+                </Button>
+              )}
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            {/* Filtres de base */}
+            <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-4">
               <div className="md:col-span-2 relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <Input
                   placeholder="Rechercher..."
                   value={filters.search}
                   onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-                  className="pl-12 h-12 border-gray-200 rounded-xl focus:border-kama-blue focus:ring-2 focus:ring-kama-blue/20"
+                  className="pl-12 h-12 border-gray-200 rounded-xl"
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 />
               </div>
               
@@ -154,14 +321,14 @@ export default function ListingsPage() {
                     <span className="flex items-center gap-2"><Car className="w-4 h-4" /> Véhicules</span>
                   </SelectItem>
                   <SelectItem value="LAND">
-                    <span className="flex items-center gap-2"><MapPin className="w-4 h-4" /> Terrains</span>
+                    <span className="flex items-center gap-2"><Trees className="w-4 h-4" /> Terrains</span>
                   </SelectItem>
                 </SelectContent>
               </Select>
               
               <Select value={filters.category} onValueChange={(value) => setFilters({ ...filters, category: value })}>
                 <SelectTrigger className="h-12 border-gray-200 rounded-xl">
-                  <SelectValue placeholder="Catégorie" />
+                  <SelectValue placeholder="Transaction" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Toutes</SelectItem>
@@ -170,14 +337,301 @@ export default function ListingsPage() {
                 </SelectContent>
               </Select>
               
+              <Select value={filters.city} onValueChange={(value) => setFilters({ ...filters, city: value })}>
+                <SelectTrigger className="h-12 border-gray-200 rounded-xl">
+                  <SelectValue placeholder="Ville" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes les villes</SelectItem>
+                  {CITIES.map(city => (
+                    <SelectItem key={city} value={city}>{city}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
               <Button 
                 onClick={handleSearch} 
-                className="h-12 bg-gradient-to-r from-kama-gold via-yellow-500 to-kama-gold hover:shadow-lg hover:shadow-kama-gold/30 text-white font-bold rounded-xl transition-all"
+                className="h-12 bg-gradient-to-r from-kama-gold via-yellow-500 to-kama-gold hover:shadow-lg text-white font-bold rounded-xl"
               >
                 <Search className="w-5 h-5 mr-2" />
                 Rechercher
               </Button>
             </div>
+            
+            {/* Toggle Filtres avancés */}
+            <button
+              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              className="flex items-center gap-2 text-kama-blue hover:text-kama-blue/80 font-medium text-sm"
+            >
+              {showAdvancedFilters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              {showAdvancedFilters ? 'Masquer les filtres avancés' : 'Afficher les filtres avancés'}
+            </button>
+            
+            {/* Filtres avancés */}
+            {showAdvancedFilters && (
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                {/* Prix */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-600 mb-2 block">Prix min (FCFA)</Label>
+                    <Input
+                      type="number"
+                      placeholder="0"
+                      value={filters.minPrice}
+                      onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
+                      className="h-11 rounded-xl"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-600 mb-2 block">Prix max (FCFA)</Label>
+                    <Input
+                      type="number"
+                      placeholder="∞"
+                      value={filters.maxPrice}
+                      onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
+                      className="h-11 rounded-xl"
+                    />
+                  </div>
+                  <div className="md:col-span-2 flex items-end">
+                    <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors">
+                      <Checkbox
+                        checked={filters.verified}
+                        onCheckedChange={(checked) => setFilters({ ...filters, verified: checked })}
+                      />
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                        <span className="text-sm font-medium">Annonces vérifiées uniquement</span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+                
+                {/* Filtres spécifiques TERRAIN */}
+                {filters.type === 'LAND' && (
+                  <div className="p-4 bg-green-50 rounded-xl border border-green-200">
+                    <h3 className="font-bold text-green-800 mb-4 flex items-center gap-2">
+                      <Trees className="w-5 h-5" />
+                      Filtres Terrain
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div>
+                        <Label className="text-sm font-medium text-gray-600 mb-2 block">Superficie min (m²)</Label>
+                        <Input
+                          type="number"
+                          placeholder="0"
+                          value={landFilters.minSurface}
+                          onChange={(e) => setLandFilters({ ...landFilters, minSurface: e.target.value })}
+                          className="h-11 rounded-xl"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-gray-600 mb-2 block">Superficie max (m²)</Label>
+                        <Input
+                          type="number"
+                          placeholder="∞"
+                          value={landFilters.maxSurface}
+                          onChange={(e) => setLandFilters({ ...landFilters, maxSurface: e.target.value })}
+                          className="h-11 rounded-xl"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-gray-600 mb-2 block">Topographie</Label>
+                        <Select value={landFilters.topography} onValueChange={(value) => setLandFilters({ ...landFilters, topography: value })}>
+                          <SelectTrigger className="h-11 rounded-xl">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Toutes</SelectItem>
+                            <SelectItem value="FLAT">Plat</SelectItem>
+                            <SelectItem value="SLOPED">En pente</SelectItem>
+                            <SelectItem value="HILLY">Vallonné</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex items-end">
+                        <label className="flex items-center gap-3 p-3 bg-white rounded-xl cursor-pointer w-full">
+                          <Checkbox
+                            checked={landFilters.boundaryMarked}
+                            onCheckedChange={(checked) => setLandFilters({ ...landFilters, boundaryMarked: checked })}
+                          />
+                          <span className="text-sm font-medium">Terrain borné</span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Filtres spécifiques IMMOBILIER */}
+                {filters.type === 'HOUSE' && (
+                  <div className="p-4 bg-blue-50 rounded-xl border border-blue-200">
+                    <h3 className="font-bold text-blue-800 mb-4 flex items-center gap-2">
+                      <Home className="w-5 h-5" />
+                      Filtres Immobilier
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                      <div>
+                        <Label className="text-sm font-medium text-gray-600 mb-2 block">Surface min (m²)</Label>
+                        <Input
+                          type="number"
+                          placeholder="0"
+                          value={houseFilters.minSurface}
+                          onChange={(e) => setHouseFilters({ ...houseFilters, minSurface: e.target.value })}
+                          className="h-11 rounded-xl"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-gray-600 mb-2 block">Surface max (m²)</Label>
+                        <Input
+                          type="number"
+                          placeholder="∞"
+                          value={houseFilters.maxSurface}
+                          onChange={(e) => setHouseFilters({ ...houseFilters, maxSurface: e.target.value })}
+                          className="h-11 rounded-xl"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-gray-600 mb-2 block flex items-center gap-1">
+                          <BedDouble className="w-4 h-4" /> Chambres min
+                        </Label>
+                        <Select value={houseFilters.minBedrooms || 'all'} onValueChange={(value) => setHouseFilters({ ...houseFilters, minBedrooms: value === 'all' ? '' : value })}>
+                          <SelectTrigger className="h-11 rounded-xl">
+                            <SelectValue placeholder="Toutes" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Toutes</SelectItem>
+                            <SelectItem value="1">1+</SelectItem>
+                            <SelectItem value="2">2+</SelectItem>
+                            <SelectItem value="3">3+</SelectItem>
+                            <SelectItem value="4">4+</SelectItem>
+                            <SelectItem value="5">5+</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-gray-600 mb-2 block flex items-center gap-1">
+                          <Bath className="w-4 h-4" /> Salles de bain min
+                        </Label>
+                        <Select value={houseFilters.minBathrooms || 'all'} onValueChange={(value) => setHouseFilters({ ...houseFilters, minBathrooms: value === 'all' ? '' : value })}>
+                          <SelectTrigger className="h-11 rounded-xl">
+                            <SelectValue placeholder="Toutes" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Toutes</SelectItem>
+                            <SelectItem value="1">1+</SelectItem>
+                            <SelectItem value="2">2+</SelectItem>
+                            <SelectItem value="3">3+</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-gray-600 mb-2 block">Meublé</Label>
+                        <Select value={houseFilters.furnished} onValueChange={(value) => setHouseFilters({ ...houseFilters, furnished: value })}>
+                          <SelectTrigger className="h-11 rounded-xl">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Tous</SelectItem>
+                            <SelectItem value="FURNISHED">Meublé</SelectItem>
+                            <SelectItem value="SEMI_FURNISHED">Semi-meublé</SelectItem>
+                            <SelectItem value="UNFURNISHED">Non meublé</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Filtres spécifiques VÉHICULE */}
+                {filters.type === 'CAR' && (
+                  <div className="p-4 bg-orange-50 rounded-xl border border-orange-200">
+                    <h3 className="font-bold text-orange-800 mb-4 flex items-center gap-2">
+                      <Car className="w-5 h-5" />
+                      Filtres Véhicule
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+                      <div>
+                        <Label className="text-sm font-medium text-gray-600 mb-2 block">Marque</Label>
+                        <Select value={carFilters.brand} onValueChange={(value) => setCarFilters({ ...carFilters, brand: value })}>
+                          <SelectTrigger className="h-11 rounded-xl">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Toutes</SelectItem>
+                            {CAR_BRANDS.map(brand => (
+                              <SelectItem key={brand.value} value={brand.value}>{brand.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-gray-600 mb-2 block flex items-center gap-1">
+                          <Calendar className="w-4 h-4" /> Année min
+                        </Label>
+                        <Input
+                          type="number"
+                          placeholder="2000"
+                          value={carFilters.minYear}
+                          onChange={(e) => setCarFilters({ ...carFilters, minYear: e.target.value })}
+                          className="h-11 rounded-xl"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-gray-600 mb-2 block">Année max</Label>
+                        <Input
+                          type="number"
+                          placeholder="2025"
+                          value={carFilters.maxYear}
+                          onChange={(e) => setCarFilters({ ...carFilters, maxYear: e.target.value })}
+                          className="h-11 rounded-xl"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-gray-600 mb-2 block">Km max</Label>
+                        <Input
+                          type="number"
+                          placeholder="200000"
+                          value={carFilters.maxMileage}
+                          onChange={(e) => setCarFilters({ ...carFilters, maxMileage: e.target.value })}
+                          className="h-11 rounded-xl"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-gray-600 mb-2 block flex items-center gap-1">
+                          <Fuel className="w-4 h-4" /> Carburant
+                        </Label>
+                        <Select value={carFilters.fuel} onValueChange={(value) => setCarFilters({ ...carFilters, fuel: value })}>
+                          <SelectTrigger className="h-11 rounded-xl">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Tous</SelectItem>
+                            {FUEL_TYPES.map(f => (
+                              <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-gray-600 mb-2 block flex items-center gap-1">
+                          <Settings className="w-4 h-4" /> Transmission
+                        </Label>
+                        <Select value={carFilters.transmission} onValueChange={(value) => setCarFilters({ ...carFilters, transmission: value })}>
+                          <SelectTrigger className="h-11 rounded-xl">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Toutes</SelectItem>
+                            {TRANSMISSIONS.map(t => (
+                              <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </Card>
 
@@ -187,7 +641,7 @@ export default function ListingsPage() {
             {!loading && (
               <Badge className="bg-gradient-to-r from-kama-blue to-blue-600 text-white border-0 text-sm px-4 py-1.5 shadow-lg">
                 <Sparkles className="w-4 h-4 mr-2" />
-                {listings.length} annonce{listings.length > 1 ? 's' : ''} trouvée{listings.length > 1 ? 's' : ''}
+                {pagination.total || listings.length} annonce{(pagination.total || listings.length) > 1 ? 's' : ''} trouvée{(pagination.total || listings.length) > 1 ? 's' : ''}
               </Badge>
             )}
           </div>
@@ -227,11 +681,16 @@ export default function ListingsPage() {
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-3">Aucune annonce trouvée</h3>
               <p className="text-gray-600 mb-8">Essayez de modifier vos critères de recherche</p>
-              <Link href="/listings/create">
-                <Button className="bg-gradient-to-r from-kama-gold to-yellow-600 hover:shadow-lg text-white px-8">
-                  Publier une annonce
+              <div className="flex gap-4 justify-center">
+                <Button onClick={resetFilters} variant="outline" className="px-6">
+                  Réinitialiser les filtres
                 </Button>
-              </Link>
+                <Link href="/listings/create">
+                  <Button className="bg-gradient-to-r from-kama-gold to-yellow-600 hover:shadow-lg text-white px-8">
+                    Publier une annonce
+                  </Button>
+                </Link>
+              </div>
             </CardContent>
           </Card>
         ) : (
@@ -246,7 +705,7 @@ export default function ListingsPage() {
               >
                 <div className={`relative overflow-hidden ${viewMode === 'list' ? 'w-64 flex-shrink-0' : 'aspect-[4/3]'}`}>
                   <img
-                    src={listing.images?.[0] || DEMO_IMAGES[index % DEMO_IMAGES.length]}
+                    src={listing.images?.[0]?.url || listing.images?.[0] || DEMO_IMAGES[index % DEMO_IMAGES.length]}
                     alt={listing.title}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                   />
@@ -300,7 +759,7 @@ export default function ListingsPage() {
                   {viewMode === 'list' && (
                     <>
                       <p className="text-gray-600 text-sm mb-3 line-clamp-2">{listing.description}</p>
-                      <p className="text-2xl font-bold text-gradient-gold mb-3">
+                      <p className="text-2xl font-bold text-kama-gold mb-3">
                         {new Intl.NumberFormat('fr-FR', {
                           style: 'currency',
                           currency: 'XAF',
@@ -315,6 +774,43 @@ export default function ListingsPage() {
                     <MapPin className="w-4 h-4 mr-1.5 text-kama-gold" />
                     <span className="truncate">{listing.city}</span>
                   </div>
+                  
+                  {/* Détails spécifiques */}
+                  {listing.type === 'HOUSE' && listing.propertyDetails && (
+                    <div className="flex items-center gap-3 mt-3 text-sm text-gray-500">
+                      {listing.propertyDetails.surface && (
+                        <span className="flex items-center gap-1">
+                          <Ruler className="w-3.5 h-3.5" />
+                          {listing.propertyDetails.surface} m²
+                        </span>
+                      )}
+                      {listing.propertyDetails.bedrooms && (
+                        <span className="flex items-center gap-1">
+                          <BedDouble className="w-3.5 h-3.5" />
+                          {listing.propertyDetails.bedrooms}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  {listing.type === 'LAND' && listing.landDetails?.surface && (
+                    <div className="flex items-center gap-1 mt-3 text-sm text-gray-500">
+                      <Ruler className="w-3.5 h-3.5" />
+                      {listing.landDetails.surface} m²
+                    </div>
+                  )}
+                  {listing.type === 'CAR' && listing.vehicleDetails && (
+                    <div className="flex items-center gap-3 mt-3 text-sm text-gray-500">
+                      {listing.vehicleDetails.brand && (
+                        <span>{listing.vehicleDetails.brand}</span>
+                      )}
+                      {listing.vehicleDetails.year && (
+                        <span>{listing.vehicleDetails.year}</span>
+                      )}
+                      {listing.vehicleDetails.mileage && (
+                        <span>{listing.vehicleDetails.mileage.toLocaleString()} km</span>
+                      )}
+                    </div>
+                  )}
                 </CardContent>
                 
                 <div className="h-1 bg-gradient-to-r from-kama-blue via-kama-gold to-kama-blue transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></div>
@@ -324,5 +820,17 @@ export default function ListingsPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function ListingsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-16 h-16 border-4 border-kama-gold/20 border-t-kama-gold rounded-full animate-spin"></div>
+      </div>
+    }>
+      <ListingsContent />
+    </Suspense>
   );
 }

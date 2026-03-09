@@ -17,6 +17,9 @@ export async function GET(request) {
     const type = searchParams.get('type');
     if (type) filter.type = type;
 
+    const subCategory = searchParams.get('subCategory');
+    if (subCategory) filter.subCategory = subCategory;
+
     const category = searchParams.get('category');
     if (category) filter.category = category;
 
@@ -39,6 +42,87 @@ export async function GET(request) {
         { title: { $regex: search, $options: 'i' } },
         { description: { $regex: search, $options: 'i' } },
       ];
+    }
+
+    // ========================================
+    // FILTRES AVANCÉS POUR LES TERRAINS
+    // ========================================
+    const minSurface = searchParams.get('minSurface');
+    const maxSurface = searchParams.get('maxSurface');
+    
+    if (type === 'LAND') {
+      if (minSurface || maxSurface) {
+        filter['landDetails.surface'] = {};
+        if (minSurface) filter['landDetails.surface'].$gte = parseFloat(minSurface);
+        if (maxSurface) filter['landDetails.surface'].$lte = parseFloat(maxSurface);
+      }
+      
+      const topography = searchParams.get('topography');
+      if (topography) filter['landDetails.topography'] = topography;
+      
+      const boundaryMarked = searchParams.get('boundaryMarked');
+      if (boundaryMarked === 'true') filter['landDetails.boundaryMarked'] = true;
+      
+      const accessibility = searchParams.get('accessibility');
+      if (accessibility) {
+        filter['landDetails.accessibility'] = { $in: accessibility.split(',') };
+      }
+    }
+
+    // ========================================
+    // FILTRES AVANCÉS POUR L'IMMOBILIER
+    // ========================================
+    if (type === 'HOUSE') {
+      if (minSurface || maxSurface) {
+        filter['propertyDetails.surface'] = {};
+        if (minSurface) filter['propertyDetails.surface'].$gte = parseFloat(minSurface);
+        if (maxSurface) filter['propertyDetails.surface'].$lte = parseFloat(maxSurface);
+      }
+      
+      const minBedrooms = searchParams.get('minBedrooms');
+      if (minBedrooms) filter['propertyDetails.bedrooms'] = { $gte: parseInt(minBedrooms) };
+      
+      const minBathrooms = searchParams.get('minBathrooms');
+      if (minBathrooms) filter['propertyDetails.bathrooms'] = { $gte: parseInt(minBathrooms) };
+      
+      const furnished = searchParams.get('furnished');
+      if (furnished) filter['propertyDetails.furnished'] = furnished;
+      
+      const condition = searchParams.get('condition');
+      if (condition) filter['propertyDetails.condition'] = condition;
+      
+      const amenities = searchParams.get('amenities');
+      if (amenities) {
+        filter['propertyDetails.amenities'] = { $all: amenities.split(',') };
+      }
+    }
+
+    // ========================================
+    // FILTRES AVANCÉS POUR LES VÉHICULES
+    // ========================================
+    if (type === 'CAR') {
+      const brand = searchParams.get('brand');
+      if (brand) filter['vehicleDetails.brand'] = brand;
+      
+      const minYear = searchParams.get('minYear');
+      const maxYear = searchParams.get('maxYear');
+      if (minYear || maxYear) {
+        filter['vehicleDetails.year'] = {};
+        if (minYear) filter['vehicleDetails.year'].$gte = parseInt(minYear);
+        if (maxYear) filter['vehicleDetails.year'].$lte = parseInt(maxYear);
+      }
+      
+      const maxMileage = searchParams.get('maxMileage');
+      if (maxMileage) filter['vehicleDetails.mileage'] = { $lte: parseInt(maxMileage) };
+      
+      const fuel = searchParams.get('fuel');
+      if (fuel) filter['vehicleDetails.fuel'] = fuel;
+      
+      const transmission = searchParams.get('transmission');
+      if (transmission) filter['vehicleDetails.transmission'] = transmission;
+      
+      const vehicleCondition = searchParams.get('vehicleCondition');
+      if (vehicleCondition) filter['vehicleDetails.condition'] = vehicleCondition;
     }
 
     // Tri
@@ -70,6 +154,7 @@ export async function GET(request) {
       filters: {
         city,
         type,
+        subCategory,
         category,
         minPrice,
         maxPrice,
