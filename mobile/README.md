@@ -25,100 +25,110 @@ L'application utilise les couleurs officielles KAMA :
 4. **EAS CLI** : `npm install -g eas-cli`
 5. **Compte Expo** : https://expo.dev/signup
 
-## 📦 Installation
+## 📦 Installation Rapide
+
+```bash
+# 1. Aller dans le dossier mobile
+cd mobile
+
+# 2. Installer les dépendances
+npm install
+
+# 3. Se connecter à Expo (créer un compte si nécessaire)
+npx eas login
+
+# 4. Configurer le projet EAS
+npx eas build:configure
+
+# 5. Builder l'APK Android
+npx eas build --platform android --profile preview
+```
+
+## 🚀 Guide Complet de Build
+
+### Étape 1 : Créer un compte Expo
+
+1. Allez sur https://expo.dev/signup
+2. Créez votre compte gratuit
+3. Confirmez votre email
+
+### Étape 2 : Installer les outils
+
+```bash
+# Installer EAS CLI globalement
+npm install -g eas-cli
+
+# Vérifier l'installation
+eas --version
+```
+
+### Étape 3 : Se connecter
+
+```bash
+# Se connecter avec votre compte Expo
+eas login
+
+# Entrez votre email et mot de passe
+```
+
+### Étape 4 : Configurer le projet
 
 ```bash
 cd mobile
 npm install
-```
 
-## 🚀 Développement
-
-### Lancer l'application en mode développement
-
-```bash
-# Démarrer le serveur Expo
-npx expo start
-
-# Scanner le QR code avec Expo Go (Android/iOS)
-```
-
-### Tester sur simulateur
-
-```bash
-# Android
-npx expo start --android
-
-# iOS (Mac uniquement)
-npx expo start --ios
-```
-
-## 📲 Build Android (APK)
-
-### 1. Se connecter à Expo
-
-```bash
-eas login
-```
-
-### 2. Configurer le projet
-
-```bash
+# Lier le projet à votre compte Expo
 eas build:configure
+# Sélectionnez "All" quand demandé
 ```
 
-### 3. Générer l'APK (Preview)
+### Étape 5 : Builder l'APK
 
 ```bash
-# Build APK pour test interne
+# Build APK de preview (pour test)
 eas build --platform android --profile preview
+
+# Le build prend ~10-15 minutes
+# Une fois terminé, vous recevrez un lien pour télécharger l'APK
 ```
 
-Le build sera effectué sur les serveurs Expo. Une fois terminé, vous recevrez un lien pour télécharger l'APK.
+### Étape 6 : Tester l'APK
 
-### 4. Build Production (AAB pour Play Store)
-
-```bash
-eas build --platform android --profile production
-```
-
-## 🍎 Build iOS
-
-### 1. Générer le build iOS
-
-```bash
-# Nécessite un compte Apple Developer ($99/an)
-eas build --platform ios --profile production
-```
-
-### 2. Soumettre sur l'App Store
-
-```bash
-eas submit --platform ios
-```
+1. Téléchargez l'APK depuis le lien fourni
+2. Transférez-le sur votre téléphone Android
+3. Activez "Sources inconnues" dans Paramètres > Sécurité
+4. Installez l'APK
 
 ## 📤 Publication sur Google Play Store
 
-### 1. Créer un compte Google Play Console
+### 1. Créer un compte développeur Google Play
 
 - Accédez à https://play.google.com/console
 - Payez les frais d'inscription ($25 unique)
 
-### 2. Créer une application
-
-- Nouvelle application > Android
-- Remplir les informations de l'application
-
-### 3. Configurer le fichier de clé
-
-Créez un fichier `google-service-account.json` pour l'upload automatique :
+### 2. Builder pour la production
 
 ```bash
-# Soumettre automatiquement
-eas submit --platform android
+# Build AAB pour Google Play
+eas build --platform android --profile production
 ```
 
-Ou uploadez manuellement l'AAB via la console.
+### 3. Uploader sur Play Console
+
+1. Créez une nouvelle application
+2. Allez dans "Production" > "Créer une version"
+3. Uploadez le fichier .aab généré
+4. Remplissez les informations requises
+
+## 🍎 Build iOS (Optionnel)
+
+```bash
+# Nécessite un compte Apple Developer ($99/an)
+eas build --platform ios --profile production
+
+# Soumettre sur l'App Store
+eas submit --platform ios
+```
 
 ## 🔧 Configuration API
 
@@ -127,25 +137,30 @@ L'application est configurée pour se connecter à :
 https://digital-marketplace-186.preview.emergentagent.com/api
 ```
 
-Pour modifier l'URL de l'API, éditez `/src/services/api.js`.
+Pour modifier l'URL, éditez `app.json` > `extra` > `apiUrl`
 
 ## 📁 Structure du projet
 
 ```
 mobile/
-├── App.js                    # Point d'entrée
+├── App.js                    # Point d'entrée + Navigation
 ├── app.json                  # Configuration Expo
 ├── eas.json                  # Configuration EAS Build
 ├── package.json
+├── assets/                   # Icônes et splash screen
+│   ├── icon.png             # Icône principale (1024x1024)
+│   ├── adaptive-icon.png    # Icône Android adaptative
+│   ├── splash.png           # Écran de démarrage
+│   └── favicon.png          # Favicon web
 └── src/
     ├── context/
     │   └── AuthContext.js    # Gestion authentification
     ├── screens/
-    │   ├── SplashScreen.js   # Écran de chargement
-    │   ├── LoginScreen.js    # Connexion
-    │   ├── RegisterScreen.js # Inscription
-    │   ├── HomeScreen.js     # Accueil
-    │   ├── ListingsScreen.js # Liste des annonces
+    │   ├── SplashScreen.js
+    │   ├── LoginScreen.js
+    │   ├── RegisterScreen.js
+    │   ├── HomeScreen.js
+    │   ├── ListingsScreen.js
     │   ├── ListingDetailScreen.js
     │   ├── CreateListingScreen.js
     │   ├── FavoritesScreen.js
@@ -156,28 +171,27 @@ mobile/
 
 ## 🔒 Sécurité
 
-- Les tokens sont stockés avec `expo-secure-store`
-- Communication HTTPS avec l'API
+- Tokens stockés avec `expo-secure-store`
+- Communication HTTPS
 - Authentification JWT
 
 ## 🐛 Dépannage
 
-### Erreur "Unable to resolve module"
+### "Unable to resolve module"
 ```bash
 rm -rf node_modules
 npm install
 npx expo start --clear
 ```
 
-### Build échoue sur EAS
-Vérifiez que vous avez la dernière version d'EAS CLI :
+### Build échoue
 ```bash
 npm install -g eas-cli@latest
+eas build:configure
 ```
 
-## 📞 Support
-
-Pour toute question technique, contactez l'équipe KAMA.
+### Erreur de connexion API
+Vérifiez que l'URL dans `app.json` est correcte et accessible.
 
 ---
 

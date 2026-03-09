@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import Listing from '@/lib/models/Listing';
 import { authenticateRequest } from '@/lib/auth';
+import { notifyListingApproved } from '@/lib/services/notificationService';
 
 // PUT - Approuver une annonce
 export async function PUT(request, { params }) {
@@ -30,6 +31,13 @@ export async function PUT(request, { params }) {
     listing.verifiedAt = new Date();
     listing.verifiedBy = auth.userId;
     await listing.save();
+
+    // Envoyer une notification au propriétaire
+    try {
+      await notifyListingApproved(listing.ownerId, listing._id, listing.title);
+    } catch (notifError) {
+      console.error('Erreur notification:', notifError);
+    }
 
     console.log(`✅ [ADMIN] Annonce approuvée: ${listing.title} par ${auth.userId}`);
 

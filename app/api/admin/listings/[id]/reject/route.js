@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import Listing from '@/lib/models/Listing';
 import { authenticateRequest } from '@/lib/auth';
+import { notifyListingRejected } from '@/lib/services/notificationService';
 
 // PUT - Rejeter une annonce
 export async function PUT(request, { params }) {
@@ -34,9 +35,14 @@ export async function PUT(request, { params }) {
     listing.rejectionReason = reason || 'Non conforme aux conditions';
     await listing.save();
 
-    console.log(`❌ [ADMIN] Annonce rejetée: ${listing.title} - Raison: ${reason}`);
+    // Envoyer une notification au propriétaire
+    try {
+      await notifyListingRejected(listing.ownerId, listing._id, listing.title, reason);
+    } catch (notifError) {
+      console.error('Erreur notification:', notifError);
+    }
 
-    // TODO: Envoyer une notification au propriétaire
+    console.log(`❌ [ADMIN] Annonce rejetée: ${listing.title} - Raison: ${reason}`);
 
     return NextResponse.json({
       success: true,
