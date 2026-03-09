@@ -7,7 +7,7 @@ import { authenticateRequest } from '@/lib/auth';
 export async function GET(request) {
   try {
     const auth = await authenticateRequest(request);
-    if (!auth.authenticated || auth.role !== 'ADMIN') {
+    if (!auth.authenticated || !['ADMIN', 'SUPER_ADMIN'].includes(auth.role)) {
       return NextResponse.json(
         { error: 'Accès non autorisé' },
         { status: 403 }
@@ -18,9 +18,16 @@ export async function GET(request) {
 
     const pendingListings = await Listing.find({ status: 'PENDING' })
       .populate('ownerId', 'fullName email phone')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
 
-    return NextResponse.json({ listings: pendingListings });
+    // Mapper ownerId vers owner pour le frontend
+    const listingsWithOwner = pendingListings.map(listing => ({
+      ...listing,
+      owner: listing.ownerId,
+    }));
+
+    return NextResponse.json({ listings: listingsWithOwner });
   } catch (error) {
     console.error('Erreur lors de la récupération des annonces:', error);
     return NextResponse.json(
@@ -34,7 +41,7 @@ export async function GET(request) {
 export async function PUT(request) {
   try {
     const auth = await authenticateRequest(request);
-    if (!auth.authenticated || auth.role !== 'ADMIN') {
+    if (!auth.authenticated || !['ADMIN', 'SUPER_ADMIN'].includes(auth.role)) {
       return NextResponse.json(
         { error: 'Accès non autorisé' },
         { status: 403 }

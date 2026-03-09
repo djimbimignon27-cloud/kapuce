@@ -7,7 +7,7 @@ import { authenticateRequest } from '@/lib/auth';
 export async function GET(request) {
   try {
     const auth = await authenticateRequest(request);
-    if (!auth.authenticated || auth.role !== 'ADMIN') {
+    if (!auth.authenticated || !['ADMIN', 'SUPER_ADMIN'].includes(auth.role)) {
       return NextResponse.json(
         { error: 'Accès non autorisé' },
         { status: 403 }
@@ -50,7 +50,7 @@ export async function GET(request) {
 export async function PUT(request) {
   try {
     const auth = await authenticateRequest(request);
-    if (!auth.authenticated || auth.role !== 'ADMIN') {
+    if (!auth.authenticated || !['ADMIN', 'SUPER_ADMIN'].includes(auth.role)) {
       return NextResponse.json(
         { error: 'Accès non autorisé' },
         { status: 403 }
