@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Toaster } from '@/components/ui/toaster';
+import FileUploader from '@/components/FileUploader';
 
 export default function CreateListingPage() {
   const router = useRouter();
@@ -77,12 +78,27 @@ export default function CreateListingPage() {
       features: [],
     },
     
-    // Media
-    images: '',
-    video: '',
+    // Media - stockage des fichiers uploadés
+    uploadedImages: [],
+    uploadedVideo: null,
   });
 
   const [errors, setErrors] = useState({});
+
+  // Handlers pour le téléversement
+  const handleImagesUpload = (files) => {
+    setFormData(prev => ({
+      ...prev,
+      uploadedImages: files,
+    }));
+  };
+
+  const handleVideoUpload = (files) => {
+    setFormData(prev => ({
+      ...prev,
+      uploadedVideo: files.length > 0 ? files[0] : null,
+    }));
+  };
 
   useEffect(() => {
     fetchConstants();
@@ -200,10 +216,11 @@ export default function CreateListingPage() {
 
     setLoading(true);
     try {
-      // Préparer les images
-      const images = formData.images 
-        ? formData.images.split(',').map(url => ({ url: url.trim() })).filter(img => img.url)
-        : [];
+      // Préparer les images depuis les fichiers uploadés
+      const images = formData.uploadedImages.map(file => ({
+        url: file.url,
+        publicId: file.publicId,
+      }));
       
       if (images.length > 5) {
         toast({
@@ -215,12 +232,22 @@ export default function CreateListingPage() {
         return;
       }
 
+      // Préparer la vidéo
+      const video = formData.uploadedVideo ? {
+        url: formData.uploadedVideo.url,
+        publicId: formData.uploadedVideo.publicId,
+      } : null;
+
       const payload = {
         ...formData,
         price: parseFloat(formData.price),
         images,
-        video: formData.video ? { url: formData.video } : null,
+        video,
       };
+
+      // Nettoyer les champs non nécessaires
+      delete payload.uploadedImages;
+      delete payload.uploadedVideo;
 
       const response = await fetch('/api/listings', {
         method: 'POST',
@@ -869,33 +896,25 @@ export default function CreateListingPage() {
           </div>
         </div>
 
-        <div>
-          <Label className="text-gray-700 font-semibold flex items-center gap-2">
-            <Image className="w-4 h-4" /> Photos (URLs séparées par des virgules)
-          </Label>
-          <Textarea
-            placeholder="https://exemple.com/photo1.jpg, https://exemple.com/photo2.jpg"
-            value={formData.images}
-            onChange={(e) => handleChange('images', e.target.value)}
-            rows={4}
-            className="mt-2 rounded-xl border-2 border-gray-200 focus:border-kama-blue"
-          />
-          <p className="text-sm text-gray-500 mt-2">
-            L'intégration Cloudinary permettra bientôt de téléverser directement vos photos
-          </p>
-        </div>
+        {/* Photos Upload avec FileUploader */}
+        <FileUploader
+          label="Photos de votre bien"
+          description="Glissez vos photos ici ou cliquez pour sélectionner"
+          acceptedTypes="image"
+          maxFiles={5}
+          existingFiles={formData.uploadedImages}
+          onUpload={handleImagesUpload}
+        />
 
-        <div>
-          <Label className="text-gray-700 font-semibold flex items-center gap-2">
-            <Video className="w-4 h-4" /> Vidéo (URL)
-          </Label>
-          <Input
-            placeholder="https://exemple.com/video.mp4"
-            value={formData.video}
-            onChange={(e) => handleChange('video', e.target.value)}
-            className="h-12 mt-2 rounded-xl border-2 border-gray-200 focus:border-kama-blue"
-          />
-        </div>
+        {/* Video Upload avec FileUploader */}
+        <FileUploader
+          label="Vidéo (optionnel)"
+          description="Glissez votre vidéo ici ou cliquez pour sélectionner"
+          acceptedTypes="video"
+          maxFiles={1}
+          existingFiles={formData.uploadedVideo ? [formData.uploadedVideo] : []}
+          onUpload={handleVideoUpload}
+        />
 
         {/* Documents Info */}
         <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">

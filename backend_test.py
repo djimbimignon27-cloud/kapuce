@@ -11,7 +11,7 @@ from datetime import datetime
 
 class KAMABackendTester:
     def __init__(self):
-        self.base_url = "https://kama-preview.preview.emergentagent.com/api"
+        self.base_url = "https://digital-marketplace-186.preview.emergentagent.com/api"
         self.headers = {"Content-Type": "application/json"}
         self.auth_token = None
         self.admin_token = None
@@ -397,6 +397,130 @@ class KAMABackendTester:
             except Exception as e:
                 self.log_test("Approve Listing", False, f"Error: {str(e)}")
     
+    def test_cloudinary_upload(self):
+        """Test Cloudinary file upload API"""
+        print("\n📤 Testing Cloudinary Upload API...")
+        
+        # Test image: 1x1 pixel red PNG in base64
+        test_image_base64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+        
+        # Test 1: Upload without authentication - should fail with 401
+        try:
+            upload_url = f"https://digital-marketplace-186.preview.emergentagent.com/api/upload"
+            payload = {
+                "file": test_image_base64,
+                "type": "image"
+            }
+            
+            response = requests.post(upload_url, json=payload, timeout=30)
+            if response.status_code == 401:
+                self.log_test("Upload - No Auth", True, "Correctly rejected unauthorized upload")
+            else:
+                self.log_test("Upload - No Auth", False, f"Expected 401, got {response.status_code}")
+                
+        except Exception as e:
+            self.log_test("Upload - No Auth", False, f"Request error: {str(e)}")
+        
+        # Test 2: Login to get auth token for authenticated tests
+        login_success = False
+        try:
+            login_url = f"https://digital-marketplace-186.preview.emergentagent.com/api/auth/login"
+            login_payload = {
+                "email": "superadmin@kama.com",
+                "password": "SuperAdminPassword123!"
+            }
+            
+            response = requests.post(login_url, json=login_payload, timeout=30)
+            if response.status_code == 200:
+                data = response.json()
+                auth_token = data.get('accessToken')
+                if auth_token:
+                    self.log_test("Upload - Auth Login", True, "Successfully obtained auth token")
+                    login_success = True
+                else:
+                    self.log_test("Upload - Auth Login", False, "No access token in response")
+            else:
+                self.log_test("Upload - Auth Login", False, f"Login failed: {response.status_code}")
+                
+        except Exception as e:
+            self.log_test("Upload - Auth Login", False, f"Login error: {str(e)}")
+        
+        if not login_success:
+            self.log_test("Upload Tests", False, "Cannot proceed without authentication", True)
+            return
+        
+        # Test 3: Upload without file - should fail with 400
+        try:
+            headers = {
+                'Authorization': f'Bearer {auth_token}',
+                'Content-Type': 'application/json'
+            }
+            payload = {"type": "image"}  # Missing file field
+            
+            response = requests.post(upload_url, json=payload, headers=headers, timeout=30)
+            if response.status_code == 400:
+                self.log_test("Upload - No File", True, "Correctly rejected upload without file")
+            else:
+                self.log_test("Upload - No File", False, f"Expected 400, got {response.status_code}")
+                
+        except Exception as e:
+            self.log_test("Upload - No File", False, f"Request error: {str(e)}")
+        
+        # Test 4: Valid file upload with authentication
+        try:
+            headers = {
+                'Authorization': f'Bearer {auth_token}',
+                'Content-Type': 'application/json'
+            }
+            payload = {
+                "file": test_image_base64,
+                "type": "image",
+                "folder": "kama/listings"
+            }
+            
+            response = requests.post(upload_url, json=payload, headers=headers, timeout=30)
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success') and 'file' in data:
+                    file_data = data['file']
+                    if 'url' in file_data and 'publicId' in file_data:
+                        self.log_test("Upload - Valid File", True, f"File uploaded successfully: {file_data['publicId']}", True)
+                    else:
+                        self.log_test("Upload - Valid File", False, "Missing url or publicId in response", True)
+                else:
+                    self.log_test("Upload - Valid File", False, "Invalid response structure", True)
+            else:
+                self.log_test("Upload - Valid File", False, f"Upload failed: {response.status_code} - {response.text}", True)
+                
+        except Exception as e:
+            self.log_test("Upload - Valid File", False, f"Upload error: {str(e)}", True)
+        
+        # Test 5: Different file types
+        file_types = ["image", "document", "video"]
+        for file_type in file_types:
+            try:
+                headers = {
+                    'Authorization': f'Bearer {auth_token}',
+                    'Content-Type': 'application/json'
+                }
+                payload = {
+                    "file": test_image_base64,
+                    "type": file_type
+                }
+                
+                response = requests.post(upload_url, json=payload, headers=headers, timeout=30)
+                if response.status_code == 200:
+                    data = response.json()
+                    if data.get('success'):
+                        self.log_test(f"Upload - {file_type.title()}", True, f"{file_type} upload successful")
+                    else:
+                        self.log_test(f"Upload - {file_type.title()}", False, f"{file_type} upload failed - response error")
+                else:
+                    self.log_test(f"Upload - {file_type.title()}", False, f"{file_type} upload failed: {response.status_code}")
+                    
+            except Exception as e:
+                self.log_test(f"Upload - {file_type.title()}", False, f"{file_type} upload error: {str(e)}")
+
     def run_all_tests(self):
         """Run all backend tests"""
         print("🚀 Starting KAMA Marketplace Backend API Tests...")
@@ -415,6 +539,7 @@ class KAMABackendTester:
         self.test_reviews_endpoints()
         self.test_favorites_endpoints()
         self.test_admin_endpoints()
+        self.test_cloudinary_upload()  # Added Cloudinary upload tests
         
         # Print summary
         self.print_summary()

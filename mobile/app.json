@@ -30,7 +30,7 @@
       "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "apiUrl": "https://kama-preview.preview.emergentagent.com/api"
+      "apiUrl": "https://digital-marketplace-186.preview.emergentagent.com/api"
     }
   }
 }

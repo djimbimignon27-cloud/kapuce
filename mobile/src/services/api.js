@@ -1,7 +1,7 @@
 import axios from 'axios';
 import Constants from 'expo-constants';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl || 'https://kama-preview.preview.emergentagent.com/api';
+const API_URL = Constants.expoConfig?.extra?.apiUrl || 'https://digital-marketplace-186.preview.emergentagent.com/api';
 
 const api = axios.create({
   baseURL: API_URL,

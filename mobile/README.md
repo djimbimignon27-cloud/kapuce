@@ -169,7 +169,7 @@ eas build --platform android --profile production
 L'API backend est configurée dans `src/services/api.js`:
 
 ```javascript
-const API_URL = 'https://kama-preview.preview.emergentagent.com/api';
+const API_URL = 'https://digital-marketplace-186.preview.emergentagent.com/api';
 ```
 
 Pour la production, mettez à jour avec votre domaine personnalisé.

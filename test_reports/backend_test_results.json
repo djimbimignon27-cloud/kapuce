@@ -4,111 +4,132 @@
     "success": true,
     "critical": false,
     "details": "Basic connectivity works",
-    "timestamp": "2026-03-04T02:05:38.244939"
+    "timestamp": "2026-03-09T20:39:07.571475"
   },
   {
     "test": "User Registration",
     "success": false,
     "critical": true,
     "details": "Status: 409, Response: {\"error\":\"Cet email est d\u00e9j\u00e0 utilis\u00e9\"}",
-    "timestamp": "2026-03-04T02:05:38.410236"
+    "timestamp": "2026-03-09T20:39:08.455855"
   },
   {
     "test": "User Login",
     "success": true,
     "critical": false,
     "details": "Login successful",
-    "timestamp": "2026-03-04T02:05:38.954504"
+    "timestamp": "2026-03-09T20:39:09.297518"
   },
   {
     "test": "Admin Registration",
     "success": false,
     "critical": false,
     "details": "Status: 409, Response: {\"error\":\"Cet email est d\u00e9j\u00e0 utilis\u00e9\"}",
-    "timestamp": "2026-03-04T02:05:39.089726"
+    "timestamp": "2026-03-09T20:39:09.485976"
   },
   {
     "test": "Admin Login",
     "success": true,
     "critical": false,
     "details": "Admin login successful",
-    "timestamp": "2026-03-04T02:05:39.520715"
+    "timestamp": "2026-03-09T20:39:10.048277"
   },
   {
     "test": "Create Listing",
-    "success": true,
+    "success": false,
     "critical": true,
-    "details": "Listing created successfully",
-    "timestamp": "2026-03-04T02:05:39.655950"
+    "details": "Status: 400, Response: {\"error\":\"Le champ subCategory est requis\"}",
+    "timestamp": "2026-03-09T20:39:10.409395"
   },
   {
     "test": "Get All Listings",
     "success": true,
     "critical": true,
     "details": "Retrieved 2 listings",
-    "timestamp": "2026-03-04T02:05:39.783032"
-  },
-  {
-    "test": "Get Listing by ID",
-    "success": true,
-    "critical": false,
-    "details": "Retrieved listing details",
-    "timestamp": "2026-03-04T02:05:40.514194"
+    "timestamp": "2026-03-09T20:39:10.565248"
   },
   {
     "test": "Search Listings",
     "success": true,
     "critical": true,
     "details": "Search returned 3 results",
-    "timestamp": "2026-03-04T02:05:40.817139"
+    "timestamp": "2026-03-09T20:39:10.962172"
   },
   {
-    "test": "Create Transaction",
+    "test": "Transactions Tests Skipped",
     "success": false,
     "critical": false,
-    "details": "Status: 400, Response: {\"error\":\"Cette annonce n'est plus disponible\"}",
-    "timestamp": "2026-03-04T02:05:41.086505"
-  },
-  {
-    "test": "Get My Transactions",
-    "success": true,
-    "critical": false,
-    "details": "Retrieved 1 transactions",
-    "timestamp": "2026-03-04T02:05:41.303016"
+    "details": "Missing auth token or listing ID",
+    "timestamp": "2026-03-09T20:39:10.963053"
   },
   {
     "test": "Reviews Tests Skipped",
     "success": false,
     "critical": false,
     "details": "Missing auth token or user ID",
-    "timestamp": "2026-03-04T02:05:41.304860"
+    "timestamp": "2026-03-09T20:39:10.963137"
   },
   {
-    "test": "Add to Favorites",
-    "success": true,
+    "test": "Favorites Tests Skipped",
+    "success": false,
     "critical": false,
-    "details": "Added to favorites successfully",
-    "timestamp": "2026-03-04T02:05:41.588106"
-  },
-  {
-    "test": "Get My Favorites",
-    "success": true,
-    "critical": false,
-    "details": "Retrieved 1 favorites",
-    "timestamp": "2026-03-04T02:05:41.734717"
+    "details": "Missing auth token or listing ID",
+    "timestamp": "2026-03-09T20:39:10.963210"
   },
   {
     "test": "Admin Dashboard",
     "success": true,
     "critical": false,
     "details": "Dashboard data retrieved successfully",
-    "timestamp": "2026-03-04T02:05:41.982717"
+    "timestamp": "2026-03-09T20:39:11.536288"
   },
   {
-    "test": "Approve Listing",
+    "test": "Upload - No Auth",
+    "success": true,
+    "critical": false,
+    "details": "Correctly rejected unauthorized upload",
+    "timestamp": "2026-03-09T20:39:13.535535"
+  },
+  {
+    "test": "Upload - Auth Login",
+    "success": true,
+    "critical": false,
+    "details": "Successfully obtained auth token",
+    "timestamp": "2026-03-09T20:39:14.069246"
+  },
+  {
+    "test": "Upload - No File",
+    "success": true,
+    "critical": false,
+    "details": "Correctly rejected upload without file",
+    "timestamp": "2026-03-09T20:39:14.352290"
+  },
+  {
+    "test": "Upload - Valid File",
+    "success": true,
+    "critical": true,
+    "details": "File uploaded successfully: kama/listings/g1ioch8wf5tr3zzk4qyj",
+    "timestamp": "2026-03-09T20:39:15.238936"
+  },
+  {
+    "test": "Upload - Image",
+    "success": true,
+    "critical": false,
+    "details": "image upload successful",
+    "timestamp": "2026-03-09T20:39:15.922184"
+  },
+  {
+    "test": "Upload - Document",
+    "success": true,
+    "critical": false,
+    "details": "document upload successful",
+    "timestamp": "2026-03-09T20:39:16.461137"
+  },
+  {
+    "test": "Upload - Video",
     "success": false,
     "critical": false,
-    "details": "Status: 404, Response: {\"error\":\"Route /admin/listings/69a793735905b5bf6bc1c4d1 not found\"}",
-    "timestamp": "2026-03-04T02:05:43.149469"
+    "details": "video upload failed: 500",
+    "timestamp": "2026-03-09T20:39:16.822694"
   }
 ]

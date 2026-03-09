@@ -518,7 +518,7 @@ export default function App() {
               </Button>
             </Link>
             <Link href="/listings">
-              <Button variant="outline" className="border-2 border-white text-white hover:bg-white hover:text-kama-blue font-bold px-8 py-6 text-lg rounded-xl transition-all">
+              <Button className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-kama-blue font-bold px-8 py-6 text-lg rounded-xl transition-all">
                 <Search className="w-5 h-5 mr-2" />
                 Explorer les annonces
               </Button>
