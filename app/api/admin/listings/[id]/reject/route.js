@@ -20,20 +20,27 @@ export async function PUT(request, { params }) {
     const body = await request.json();
     const { reason } = body;
 
-    const listing = await Listing.findById(id);
+    // Utiliser findByIdAndUpdate pour éviter les problèmes de validation
+    const listing = await Listing.findByIdAndUpdate(
+      id,
+      {
+        $set: {
+          status: 'REJECTED',
+          verified: false,
+          rejectedAt: new Date(),
+          rejectedBy: auth.userId,
+          rejectionReason: reason || 'Non conforme aux conditions',
+        }
+      },
+      { new: true, runValidators: false }
+    );
+
     if (!listing) {
       return NextResponse.json(
         { error: 'Annonce non trouvée' },
         { status: 404 }
       );
     }
-
-    listing.status = 'REJECTED';
-    listing.verified = false;
-    listing.rejectedAt = new Date();
-    listing.rejectedBy = auth.userId;
-    listing.rejectionReason = reason || 'Non conforme aux conditions';
-    await listing.save();
 
     // Envoyer une notification au propriétaire
     try {

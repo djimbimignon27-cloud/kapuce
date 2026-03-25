@@ -60,7 +60,10 @@ export default function AdminLoginPage() {
           description: `Bienvenue ${data.user.fullName}`,
         });
         
-        setTimeout(() => router.push('/admin/dashboard'), 1000);
+        // Redirection immédiate après un court délai
+        setTimeout(() => {
+          window.location.href = '/admin/dashboard';
+        }, 500);
       } else {
         toast({
           title: 'Accès refusé',

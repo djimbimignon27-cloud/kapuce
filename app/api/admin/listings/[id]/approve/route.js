@@ -18,19 +18,26 @@ export async function PUT(request, { params }) {
     await connectDB();
     const { id } = params;
 
-    const listing = await Listing.findById(id);
+    // Utiliser findByIdAndUpdate pour éviter les problèmes de validation
+    const listing = await Listing.findByIdAndUpdate(
+      id,
+      {
+        $set: {
+          verified: true,
+          status: 'ACTIVE',
+          verifiedAt: new Date(),
+          verifiedBy: auth.userId,
+        }
+      },
+      { new: true, runValidators: false }
+    );
+
     if (!listing) {
       return NextResponse.json(
         { error: 'Annonce non trouvée' },
         { status: 404 }
       );
     }
-
-    listing.verified = true;
-    listing.status = 'ACTIVE';
-    listing.verifiedAt = new Date();
-    listing.verifiedBy = auth.userId;
-    await listing.save();
 
     // Envoyer une notification au propriétaire
     try {
