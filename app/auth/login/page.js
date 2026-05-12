@@ -109,11 +109,9 @@ export default function LoginPage() {
               <div className="flex justify-center mb-6">
                 <div className="relative group">
                   <div className="absolute inset-0 bg-gradient-to-r from-kama-gold to-yellow-500 blur-2xl opacity-30 group-hover:opacity-50 transition-all rounded-full"></div>
-                  <img 
-                    src="https://customer-assets.emergentagent.com/job_trusted-transactions/artifacts/edwa4pun_IMG-20260221-WA0185.jpg" 
-                    alt="KAMA Logo" 
-                    className="h-24 w-auto relative z-10 drop-shadow-2xl transform group-hover:scale-105 transition-transform"
-                  />
+                  <div className="relative z-10 flex items-center justify-center h-24 w-24 bg-gradient-to-br from-kama-blue to-blue-700 rounded-2xl shadow-lg transform group-hover:scale-105 transition-transform">
+                    <span className="text-white font-black text-3xl">K.G</span>
+                  </div>
                 </div>
               </div>
               <CardTitle className="text-3xl font-black text-gray-900">

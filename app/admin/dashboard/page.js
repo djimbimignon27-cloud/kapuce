@@ -248,7 +248,7 @@ export default function AdminDashboard() {
               </div>
               {sidebarOpen && (
                 <div className="animate-in fade-in slide-in-from-left">
-                  <h2 className="text-white font-bold text-lg">KAMA Admin</h2>
+                  <h2 className="text-white font-bold text-lg">KAPUCE.G Admin</h2>
                   <p className="text-gray-500 text-xs">Panneau d'administration</p>
                 </div>
               )}
@@ -344,7 +344,7 @@ export default function AdminDashboard() {
                   {menuItems.find(item => item.id === activeTab)?.label || 'Dashboard'}
                 </h1>
                 <p className="text-sm text-gray-500">
-                  Gérez votre plateforme KAMA
+                  Gérez votre plateforme KAPUCE.G
                 </p>
               </div>
             </div>

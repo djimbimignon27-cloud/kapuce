@@ -8,10 +8,11 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Search, Home, Car, MapPin, Heart, User, LogOut, PlusCircle, Shield, Menu, X, TrendingUp, CheckCircle, Star, Eye, Sparkles, ArrowRight, Building2, Phone, Mail } from 'lucide-react';
+import { Search, Home, Car, MapPin, Heart, User, LogOut, PlusCircle, Shield, Menu, X, TrendingUp, CheckCircle, Star, Eye, Sparkles, ArrowRight, Building2, Phone, Mail, Trees } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Toaster } from '@/components/ui/toaster';
 import { NotificationBell } from '@/components/NotificationBell';
+import { ListingGridSkeleton } from '@/components/Skeletons';
 
 // Demo images from vision agent
 const DEMO_IMAGES = {
@@ -106,14 +107,12 @@ export default function App() {
             <Link href="/" className="flex items-center space-x-3 group">
               <div className="relative">
                 <div className="absolute inset-0 bg-kama-gold/30 blur-2xl rounded-full group-hover:bg-kama-gold/50 transition-all duration-500"></div>
-                <img 
-                  src="https://customer-assets.emergentagent.com/job_trusted-transactions/artifacts/edwa4pun_IMG-20260221-WA0185.jpg" 
-                  alt="KAMA Logo" 
-                  className="h-14 w-auto relative z-10 transition-transform duration-500 group-hover:scale-110 drop-shadow-2xl"
-                />
+                <div className="relative z-10 flex items-center justify-center h-14 w-14 bg-gradient-to-br from-kama-blue to-blue-700 rounded-xl shadow-lg">
+                  <span className="text-white font-black text-xl">K.G</span>
+                </div>
               </div>
               <div className="hidden sm:block">
-                <span className={`font-bold text-xl ${scrolled ? 'text-kama-blue' : 'text-white'} transition-colors`}>KAMA</span>
+                <span className={`font-bold text-xl ${scrolled ? 'text-kama-blue' : 'text-white'} transition-colors`}>KAPUCE.G</span>
                 <p className={`text-xs ${scrolled ? 'text-gray-500' : 'text-white/70'} transition-colors`}>Transactions Sécurisées</p>
               </div>
             </Link>
@@ -329,7 +328,7 @@ export default function App() {
           <div className="text-center mb-16">
             <Badge className="bg-kama-gold/10 text-kama-gold border-kama-gold/30 mb-4 px-4 py-1.5">
               <Sparkles className="w-4 h-4 mr-2" />
-              Pourquoi KAMA
+              Pourquoi KAPUCE.G
             </Badge>
             <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-6">
               La confiance au cœur de
@@ -508,7 +507,7 @@ export default function App() {
             Prêt à commencer?
           </h2>
           <p className="text-xl text-blue-100 mb-10 max-w-2xl mx-auto">
-            Rejoignez des milliers d'utilisateurs qui font confiance à KAMA pour leurs transactions
+            Rejoignez des milliers d'utilisateurs qui font confiance à KAPUCE.G pour leurs transactions
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/auth/choose-account">
@@ -533,13 +532,11 @@ export default function App() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
             <div>
               <div className="flex items-center gap-3 mb-6">
-                <img 
-                  src="https://customer-assets.emergentagent.com/job_trusted-transactions/artifacts/edwa4pun_IMG-20260221-WA0185.jpg" 
-                  alt="KAMA Logo" 
-                  className="h-12 w-auto brightness-0 invert"
-                />
+                <div className="flex items-center justify-center h-12 w-12 bg-gradient-to-br from-kama-blue to-blue-700 rounded-xl">
+                  <span className="text-white font-black text-lg">K.G</span>
+                </div>
                 <div>
-                  <span className="font-bold text-xl">KAMA</span>
+                  <span className="font-bold text-xl">KAPUCE.G</span>
                   <p className="text-gray-500 text-xs">Transactions Sécurisées</p>
                 </div>
               </div>
@@ -572,7 +569,7 @@ export default function App() {
               <ul className="space-y-3 text-gray-400">
                 <li className="flex items-center gap-2">
                   <Mail className="w-4 h-4 text-kama-gold" />
-                  contact@kama-gabon.com
+                  contact@kapuce-gabon.com
                 </li>
                 <li className="flex items-center gap-2">
                   <Phone className="w-4 h-4 text-kama-gold" />
@@ -588,7 +585,7 @@ export default function App() {
           
           <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-gray-500 text-sm">
-              © 2024 KAMA. Tous droits réservés.
+              © 2024 KAPUCE.G. Tous droits réservés.
             </p>
             <div className="flex items-center gap-2 text-gray-500 text-sm">
               <span>Fait avec</span>

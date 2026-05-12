@@ -23,6 +23,9 @@ module.exports = {
                         ring: 'hsl(var(--ring))',
                         background: 'hsl(var(--background))',
                         foreground: 'hsl(var(--foreground))',
+                        'kapuce-blue': '#0B3D91',
+                        'kapuce-gold': '#C9A227',
+                        // Aliases for backward compatibility
                         'kama-blue': '#0B3D91',
                         'kama-gold': '#C9A227',
                         primary: {

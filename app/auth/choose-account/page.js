@@ -91,11 +91,9 @@ export default function ChooseAccountPage() {
           <div className="flex justify-center mb-6">
             <div className="relative group">
               <div className="absolute inset-0 bg-gradient-to-r from-kama-gold to-yellow-500 blur-3xl opacity-40 group-hover:opacity-60 transition-all rounded-full animate-pulse"></div>
-              <img 
-                src="https://customer-assets.emergentagent.com/job_trusted-transactions/artifacts/edwa4pun_IMG-20260221-WA0185.jpg" 
-                alt="KAMA Logo" 
-                className="h-28 w-auto relative z-10 drop-shadow-2xl transform group-hover:scale-110 transition-transform"
-              />
+              <div className="relative z-10 flex items-center justify-center h-28 w-28 bg-gradient-to-br from-kama-blue to-blue-700 rounded-2xl shadow-2xl transform group-hover:scale-110 transition-transform">
+                <span className="text-white font-black text-4xl">K.G</span>
+              </div>
             </div>
           </div>
           <Badge className="bg-white/10 backdrop-blur-md text-white border-white/20 px-4 py-1.5 mb-4">

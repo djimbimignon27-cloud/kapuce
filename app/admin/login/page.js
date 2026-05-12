@@ -114,7 +114,7 @@ export default function AdminLoginPage() {
                 </div>
               </div>
               <CardTitle className="text-3xl font-black text-white">
-                Administration KAMA
+                Administration KAPUCE.G
               </CardTitle>
               <CardDescription className="text-gray-400 text-base mt-2">
                 Accès restreint - Administrateurs uniquement
@@ -132,7 +132,7 @@ export default function AdminLoginPage() {
                     id="email"
                     name="email"
                     type="email"
-                    placeholder="admin@kama-gabon.com"
+                    placeholder="admin@kapuce-gabon.com"
                     value={formData.email}
                     onChange={handleChange}
                     className={`h-14 bg-gray-800/50 border-gray-700 text-white placeholder:text-gray-500 rounded-xl focus:border-red-500 focus:ring-red-500/20 ${errors.email ? 'border-red-500' : ''}`}
@@ -220,7 +220,7 @@ export default function AdminLoginPage() {
               <span>Connexion SSL/TLS chiffrée</span>
             </div>
             <p className="text-gray-600 text-xs">
-              © 2024 KAMA - Système d'administration sécurisé
+              © 2024 KAPUCE.G - Système d'administration sécurisé
             </p>
           </div>
         </div>

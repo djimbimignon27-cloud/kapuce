@@ -94,7 +94,7 @@ export default function RegisterPage() {
         
         toast({
           title: '🎉 Inscription réussie!',
-          description: 'Bienvenue sur KAMA! Votre compte a été créé.',
+          description: 'Bienvenue sur KAPUCE.G! Votre compte a été créé.',
         });
         
         setTimeout(() => {
@@ -151,11 +151,9 @@ export default function RegisterPage() {
               <div className="flex justify-center mb-4">
                 <div className="relative group">
                   <div className="absolute inset-0 bg-gradient-to-r from-kama-gold to-yellow-500 blur-2xl opacity-30 group-hover:opacity-50 transition-all rounded-full"></div>
-                  <img 
-                    src="https://customer-assets.emergentagent.com/job_trusted-transactions/artifacts/edwa4pun_IMG-20260221-WA0185.jpg" 
-                    alt="KAMA Logo" 
-                    className="h-20 w-auto relative z-10 drop-shadow-2xl transform group-hover:scale-105 transition-transform"
-                  />
+                  <div className="relative z-10 flex items-center justify-center h-20 w-20 bg-gradient-to-br from-kama-blue to-blue-700 rounded-2xl shadow-lg transform group-hover:scale-105 transition-transform">
+                    <span className="text-white font-black text-2xl">K.G</span>
+                  </div>
                 </div>
               </div>
               
@@ -173,7 +171,7 @@ export default function RegisterPage() {
                 Créez votre compte
               </CardTitle>
               <CardDescription className="text-gray-600 mt-2">
-                Rejoignez la communauté KAMA
+                Rejoignez la communauté KAPUCE.G
               </CardDescription>
             </CardHeader>
             

@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "KAMA",
-    "slug": "kama-gabon",
+    "name": "KAPUCE.G",
+    "slug": "kapuce-gabon",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -16,14 +16,14 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.kama.gabon"
+      "bundleIdentifier": "com.kapuce.gabon"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0B3D91"
       },
-      "package": "com.kama.gabon",
+      "package": "com.kapuce.gabon",
       "versionCode": 1,
       "permissions": [
         "android.permission.ACCESS_FINE_LOCATION",
@@ -40,7 +40,7 @@
     "extra": {
       "apiUrl": "https://digital-marketplace-186.preview.emergentagent.com/api",
       "eas": {
-        "projectId": "kama-gabon"
+        "projectId": "kapuce-gabon"
       }
     },
     "plugins": [
