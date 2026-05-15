@@ -43,6 +43,7 @@ export default function CreateListingPage() {
     
     // Rental specific (Location)
     rentalDetails: {
+      // Immobilier
       monthlyRent: '',
       charges: '',
       deposit: '',
@@ -50,6 +51,19 @@ export default function CreateListingPage() {
       availableDate: '',
       petsAllowed: false,
       smokingAllowed: false,
+      // Véhicule (location par jour)
+      weekendRate: '',
+      vehicleDeposit: '',
+      dailyKm: '',
+      minRentalDays: '',
+      extraKmRate: '',
+      withDriver: false,
+      deliveryAvailable: false,
+      insuranceIncluded: false,
+      // Terrain
+      leaseType: '',
+      constructionAllowed: false,
+      agricultureAllowed: false,
     },
     
     // Land specific
@@ -489,11 +503,14 @@ export default function CreateListingPage() {
         {/* Price */}
         <div>
           <Label className="text-gray-700 font-semibold">
-            {formData.category === 'RENT' ? 'Loyer mensuel (FCFA) *' : 'Prix de vente (FCFA) *'}
+            {formData.category === 'RENT' 
+              ? (formData.type === 'CAR' ? 'Tarif journalier (FCFA/jour) *' : 'Loyer mensuel (FCFA/mois) *')
+              : 'Prix de vente (FCFA) *'
+            }
           </Label>
           <Input
             type="number"
-            placeholder={formData.category === 'RENT' ? '150000' : '50000000'}
+            placeholder={formData.category === 'RENT' ? (formData.type === 'CAR' ? '25000' : '150000') : '50000000'}
             value={formData.price}
             onChange={(e) => handleChange('price', e.target.value)}
             className={`h-12 mt-2 rounded-xl border-2 ${errors.price ? 'border-red-500' : 'border-gray-200 focus:border-kama-blue'}`}
@@ -501,12 +518,12 @@ export default function CreateListingPage() {
           {errors.price && <p className="text-red-500 text-sm mt-1">{errors.price}</p>}
         </div>
 
-        {/* Rental Specific Fields */}
-        {formData.category === 'RENT' && (
+        {/* Rental Specific Fields - IMMOBILIER */}
+        {formData.category === 'RENT' && formData.type === 'HOUSE' && (
           <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl space-y-4">
             <h4 className="font-bold text-blue-800 flex items-center gap-2">
               <Home className="w-5 h-5" />
-              Détails de la location
+              Détails de la location immobilière
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
@@ -567,24 +584,190 @@ export default function CreateListingPage() {
                 />
               </div>
             </div>
-            {formData.type === 'HOUSE' && (
-              <div className="flex flex-wrap gap-4 pt-2">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <Checkbox
-                    checked={formData.rentalDetails.petsAllowed}
-                    onCheckedChange={(checked) => handleNestedChange('rentalDetails', 'petsAllowed', checked)}
-                  />
-                  <span className="text-sm">🐕 Animaux acceptés</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <Checkbox
-                    checked={formData.rentalDetails.smokingAllowed}
-                    onCheckedChange={(checked) => handleNestedChange('rentalDetails', 'smokingAllowed', checked)}
-                  />
-                  <span className="text-sm">🚬 Fumeurs acceptés</span>
-                </label>
+            <div className="flex flex-wrap gap-4 pt-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Checkbox
+                  checked={formData.rentalDetails.petsAllowed}
+                  onCheckedChange={(checked) => handleNestedChange('rentalDetails', 'petsAllowed', checked)}
+                />
+                <span className="text-sm">🐕 Animaux acceptés</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Checkbox
+                  checked={formData.rentalDetails.smokingAllowed}
+                  onCheckedChange={(checked) => handleNestedChange('rentalDetails', 'smokingAllowed', checked)}
+                />
+                <span className="text-sm">🚬 Fumeurs acceptés</span>
+              </label>
+            </div>
+          </div>
+        )}
+
+        {/* Rental Specific Fields - VÉHICULE (Location par jour) */}
+        {formData.category === 'RENT' && formData.type === 'CAR' && (
+          <div className="p-4 bg-orange-50 border border-orange-200 rounded-xl space-y-4">
+            <h4 className="font-bold text-orange-800 flex items-center gap-2">
+              <Car className="w-5 h-5" />
+              Détails de la location de véhicule
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label className="text-gray-700 font-semibold">Tarif week-end (FCFA/jour)</Label>
+                <Input
+                  type="number"
+                  placeholder="30000"
+                  value={formData.rentalDetails.weekendRate}
+                  onChange={(e) => handleNestedChange('rentalDetails', 'weekendRate', e.target.value)}
+                  className="h-12 mt-2 rounded-xl border-2 border-gray-200 focus:border-kama-blue"
+                />
+                <span className="text-xs text-gray-500">Tarif Sam-Dim (optionnel)</span>
               </div>
-            )}
+              <div>
+                <Label className="text-gray-700 font-semibold">Caution (FCFA)</Label>
+                <Input
+                  type="number"
+                  placeholder="100000"
+                  value={formData.rentalDetails.vehicleDeposit}
+                  onChange={(e) => handleNestedChange('rentalDetails', 'vehicleDeposit', e.target.value)}
+                  className="h-12 mt-2 rounded-xl border-2 border-gray-200 focus:border-kama-blue"
+                />
+              </div>
+              <div>
+                <Label className="text-gray-700 font-semibold">Kilométrage inclus/jour</Label>
+                <Select 
+                  value={formData.rentalDetails.dailyKm} 
+                  onValueChange={(v) => handleNestedChange('rentalDetails', 'dailyKm', v)}
+                >
+                  <SelectTrigger className="h-12 mt-2 rounded-xl border-2 border-gray-200">
+                    <SelectValue placeholder="Sélectionner" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="100">100 km/jour</SelectItem>
+                    <SelectItem value="150">150 km/jour</SelectItem>
+                    <SelectItem value="200">200 km/jour</SelectItem>
+                    <SelectItem value="unlimited">Illimité</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label className="text-gray-700 font-semibold">Durée minimum de location</Label>
+                <Select 
+                  value={formData.rentalDetails.minRentalDays} 
+                  onValueChange={(v) => handleNestedChange('rentalDetails', 'minRentalDays', v)}
+                >
+                  <SelectTrigger className="h-12 mt-2 rounded-xl border-2 border-gray-200">
+                    <SelectValue placeholder="Sélectionner" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1 jour</SelectItem>
+                    <SelectItem value="2">2 jours</SelectItem>
+                    <SelectItem value="3">3 jours</SelectItem>
+                    <SelectItem value="7">1 semaine</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-gray-700 font-semibold">Frais par km supplémentaire (FCFA)</Label>
+                <Input
+                  type="number"
+                  placeholder="150"
+                  value={formData.rentalDetails.extraKmRate}
+                  onChange={(e) => handleNestedChange('rentalDetails', 'extraKmRate', e.target.value)}
+                  className="h-12 mt-2 rounded-xl border-2 border-gray-200 focus:border-kama-blue"
+                />
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-4 pt-2">
+              <label className="flex items-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-orange-100 transition">
+                <Checkbox
+                  checked={formData.rentalDetails.withDriver}
+                  onCheckedChange={(checked) => handleNestedChange('rentalDetails', 'withDriver', checked)}
+                />
+                <span className="text-sm">👨‍✈️ Avec chauffeur disponible</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-orange-100 transition">
+                <Checkbox
+                  checked={formData.rentalDetails.deliveryAvailable}
+                  onCheckedChange={(checked) => handleNestedChange('rentalDetails', 'deliveryAvailable', checked)}
+                />
+                <span className="text-sm">🚚 Livraison possible</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-orange-100 transition">
+                <Checkbox
+                  checked={formData.rentalDetails.insuranceIncluded}
+                  onCheckedChange={(checked) => handleNestedChange('rentalDetails', 'insuranceIncluded', checked)}
+                />
+                <span className="text-sm">🛡️ Assurance incluse</span>
+              </label>
+            </div>
+            <div className="p-3 bg-orange-100 rounded-lg">
+              <p className="text-sm text-orange-800">
+                <strong>💡 Conseil :</strong> Pour les locations longue durée (1 semaine+), pensez à proposer un tarif dégressif dans la description.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Rental Specific Fields - TERRAIN */}
+        {formData.category === 'RENT' && formData.type === 'LAND' && (
+          <div className="p-4 bg-green-50 border border-green-200 rounded-xl space-y-4">
+            <h4 className="font-bold text-green-800 flex items-center gap-2">
+              <MapPin className="w-5 h-5" />
+              Détails de la location de terrain
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label className="text-gray-700 font-semibold">Type de bail</Label>
+                <Select 
+                  value={formData.rentalDetails.leaseType} 
+                  onValueChange={(v) => handleNestedChange('rentalDetails', 'leaseType', v)}
+                >
+                  <SelectTrigger className="h-12 mt-2 rounded-xl border-2 border-gray-200">
+                    <SelectValue placeholder="Sélectionner" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="monthly">Mensuel</SelectItem>
+                    <SelectItem value="yearly">Annuel</SelectItem>
+                    <SelectItem value="longterm">Bail emphytéotique</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-gray-700 font-semibold">Durée minimale</Label>
+                <Select 
+                  value={formData.rentalDetails.minDuration} 
+                  onValueChange={(v) => handleNestedChange('rentalDetails', 'minDuration', v)}
+                >
+                  <SelectTrigger className="h-12 mt-2 rounded-xl border-2 border-gray-200">
+                    <SelectValue placeholder="Sélectionner" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="6">6 mois</SelectItem>
+                    <SelectItem value="12">1 an</SelectItem>
+                    <SelectItem value="24">2 ans</SelectItem>
+                    <SelectItem value="60">5 ans</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-4 pt-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Checkbox
+                  checked={formData.rentalDetails.constructionAllowed}
+                  onCheckedChange={(checked) => handleNestedChange('rentalDetails', 'constructionAllowed', checked)}
+                />
+                <span className="text-sm">🏗️ Construction autorisée</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Checkbox
+                  checked={formData.rentalDetails.agricultureAllowed}
+                  onCheckedChange={(checked) => handleNestedChange('rentalDetails', 'agricultureAllowed', checked)}
+                />
+                <span className="text-sm">🌾 Agriculture autorisée</span>
+              </label>
+            </div>
           </div>
         )}
 
