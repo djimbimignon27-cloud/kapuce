@@ -41,6 +41,17 @@ export default function CreateListingPage() {
     address: '',
     neighborhood: '',
     
+    // Rental specific (Location)
+    rentalDetails: {
+      monthlyRent: '',
+      charges: '',
+      deposit: '',
+      minDuration: '',
+      availableDate: '',
+      petsAllowed: false,
+      smokingAllowed: false,
+    },
+    
     // Land specific
     landDetails: {
       surface: '',
@@ -49,6 +60,10 @@ export default function CreateListingPage() {
       topography: '',
       accessibility: [],
       boundaryMarked: false,
+      hasWater: false,
+      hasElectricity: false,
+      hasRoad: false,
+      documentType: '',
     },
     
     // Property specific
@@ -62,6 +77,9 @@ export default function CreateListingPage() {
       furnished: 'UNFURNISHED',
       parking: '',
       amenities: [],
+      hasWater: true,
+      hasElectricity: true,
+      hasInternet: false,
     },
     
     // Vehicle specific
@@ -74,8 +92,12 @@ export default function CreateListingPage() {
       transmission: '',
       color: '',
       doors: '',
+      seats: '',
       condition: '',
       features: [],
+      firstHand: false,
+      hasInsurance: false,
+      hasTechnicalControl: false,
     },
     
     // Media - stockage des fichiers uploadés
@@ -467,17 +489,104 @@ export default function CreateListingPage() {
         {/* Price */}
         <div>
           <Label className="text-gray-700 font-semibold">
-            Prix (FCFA) {formData.category === 'RENT' && '/ mois'} *
+            {formData.category === 'RENT' ? 'Loyer mensuel (FCFA) *' : 'Prix de vente (FCFA) *'}
           </Label>
           <Input
             type="number"
-            placeholder="500000"
+            placeholder={formData.category === 'RENT' ? '150000' : '50000000'}
             value={formData.price}
             onChange={(e) => handleChange('price', e.target.value)}
             className={`h-12 mt-2 rounded-xl border-2 ${errors.price ? 'border-red-500' : 'border-gray-200 focus:border-kama-blue'}`}
           />
           {errors.price && <p className="text-red-500 text-sm mt-1">{errors.price}</p>}
         </div>
+
+        {/* Rental Specific Fields */}
+        {formData.category === 'RENT' && (
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl space-y-4">
+            <h4 className="font-bold text-blue-800 flex items-center gap-2">
+              <Home className="w-5 h-5" />
+              Détails de la location
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label className="text-gray-700 font-semibold">Charges mensuelles (FCFA)</Label>
+                <Input
+                  type="number"
+                  placeholder="25000"
+                  value={formData.rentalDetails.charges}
+                  onChange={(e) => handleNestedChange('rentalDetails', 'charges', e.target.value)}
+                  className="h-12 mt-2 rounded-xl border-2 border-gray-200 focus:border-kama-blue"
+                />
+              </div>
+              <div>
+                <Label className="text-gray-700 font-semibold">Caution (mois de loyer)</Label>
+                <Select 
+                  value={formData.rentalDetails.deposit} 
+                  onValueChange={(v) => handleNestedChange('rentalDetails', 'deposit', v)}
+                >
+                  <SelectTrigger className="h-12 mt-2 rounded-xl border-2 border-gray-200">
+                    <SelectValue placeholder="Sélectionner" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1 mois</SelectItem>
+                    <SelectItem value="2">2 mois</SelectItem>
+                    <SelectItem value="3">3 mois</SelectItem>
+                    <SelectItem value="4">4 mois</SelectItem>
+                    <SelectItem value="6">6 mois</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-gray-700 font-semibold">Durée minimale</Label>
+                <Select 
+                  value={formData.rentalDetails.minDuration} 
+                  onValueChange={(v) => handleNestedChange('rentalDetails', 'minDuration', v)}
+                >
+                  <SelectTrigger className="h-12 mt-2 rounded-xl border-2 border-gray-200">
+                    <SelectValue placeholder="Sélectionner" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1 mois</SelectItem>
+                    <SelectItem value="3">3 mois</SelectItem>
+                    <SelectItem value="6">6 mois</SelectItem>
+                    <SelectItem value="12">1 an</SelectItem>
+                    <SelectItem value="24">2 ans</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label className="text-gray-700 font-semibold">Disponible à partir du</Label>
+                <Input
+                  type="date"
+                  value={formData.rentalDetails.availableDate}
+                  onChange={(e) => handleNestedChange('rentalDetails', 'availableDate', e.target.value)}
+                  className="h-12 mt-2 rounded-xl border-2 border-gray-200 focus:border-kama-blue"
+                />
+              </div>
+            </div>
+            {formData.type === 'HOUSE' && (
+              <div className="flex flex-wrap gap-4 pt-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <Checkbox
+                    checked={formData.rentalDetails.petsAllowed}
+                    onCheckedChange={(checked) => handleNestedChange('rentalDetails', 'petsAllowed', checked)}
+                  />
+                  <span className="text-sm">🐕 Animaux acceptés</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <Checkbox
+                    checked={formData.rentalDetails.smokingAllowed}
+                    onCheckedChange={(checked) => handleNestedChange('rentalDetails', 'smokingAllowed', checked)}
+                  />
+                  <span className="text-sm">🚬 Fumeurs acceptés</span>
+                </label>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Location */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -576,6 +685,31 @@ export default function CreateListingPage() {
             </div>
 
             <div>
+              <Label className="text-gray-700 font-semibold">Type de document</Label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2">
+                {[
+                  { value: 'TITRE_FONCIER', label: 'Titre foncier' },
+                  { value: 'LETTRE_ATTRIBUTION', label: "Lettre d'attribution" },
+                  { value: 'ACTE_VENTE', label: 'Acte de vente' },
+                  { value: 'AUCUN', label: 'Aucun document' },
+                ].map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => handleNestedChange('landDetails', 'documentType', opt.value)}
+                    className={`p-3 rounded-xl border-2 text-sm font-medium transition-all ${
+                      formData.landDetails.documentType === opt.value
+                        ? 'border-kama-blue bg-kama-blue/5 text-kama-blue'
+                        : 'border-gray-200'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
               <Label className="text-gray-700 font-semibold">Topographie</Label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2">
                 {constants?.conditionOptions?.LAND?.map((opt) => (
@@ -617,14 +751,50 @@ export default function CreateListingPage() {
               </div>
             </div>
 
-            <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl cursor-pointer">
+            <div>
+              <Label className="text-gray-700 font-semibold mb-3 block">Viabilisation</Label>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition">
+                  <Checkbox
+                    checked={formData.landDetails.hasWater}
+                    onCheckedChange={(checked) => handleNestedChange('landDetails', 'hasWater', checked)}
+                  />
+                  <div>
+                    <span className="font-semibold">💧 Eau</span>
+                    <p className="text-xs text-gray-500">Accès à l'eau courante</p>
+                  </div>
+                </label>
+                <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition">
+                  <Checkbox
+                    checked={formData.landDetails.hasElectricity}
+                    onCheckedChange={(checked) => handleNestedChange('landDetails', 'hasElectricity', checked)}
+                  />
+                  <div>
+                    <span className="font-semibold">⚡ Électricité</span>
+                    <p className="text-xs text-gray-500">Raccordement électrique</p>
+                  </div>
+                </label>
+                <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition">
+                  <Checkbox
+                    checked={formData.landDetails.hasRoad}
+                    onCheckedChange={(checked) => handleNestedChange('landDetails', 'hasRoad', checked)}
+                  />
+                  <div>
+                    <span className="font-semibold">🛣️ Route</span>
+                    <p className="text-xs text-gray-500">Accès routier goudronné</p>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <label className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-xl cursor-pointer">
               <Checkbox
                 checked={formData.landDetails.boundaryMarked}
                 onCheckedChange={(checked) => handleNestedChange('landDetails', 'boundaryMarked', checked)}
               />
               <div>
-                <span className="font-semibold">Terrain borné</span>
-                <p className="text-sm text-gray-500">Le terrain a été délimité par un géomètre</p>
+                <span className="font-semibold text-green-800">✅ Terrain borné</span>
+                <p className="text-sm text-green-600">Le terrain a été délimité par un géomètre agréé</p>
               </div>
             </label>
           </>
@@ -635,7 +805,7 @@ export default function CreateListingPage() {
           <>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
-                <Label className="text-gray-700 font-semibold">Surface (m²) *</Label>
+                <Label className="text-gray-700 font-semibold">Surface habitable (m²) *</Label>
                 <Input
                   type="number"
                   placeholder="120"
@@ -645,38 +815,57 @@ export default function CreateListingPage() {
                 />
               </div>
               <div>
-                <Label className="text-gray-700 font-semibold">Chambres</Label>
-                <Input
-                  type="number"
-                  placeholder="3"
-                  value={formData.propertyDetails.bedrooms}
-                  onChange={(e) => handleNestedChange('propertyDetails', 'bedrooms', e.target.value)}
-                  className="h-12 mt-2 rounded-xl border-2 border-gray-200"
-                />
+                <Label className="text-gray-700 font-semibold">🛏️ Chambres</Label>
+                <Select 
+                  value={formData.propertyDetails.bedrooms} 
+                  onValueChange={(v) => handleNestedChange('propertyDetails', 'bedrooms', v)}
+                >
+                  <SelectTrigger className="h-12 mt-2 rounded-xl border-2 border-gray-200">
+                    <SelectValue placeholder="Nombre" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[1,2,3,4,5,6,7,8,9,10].map(n => (
+                      <SelectItem key={n} value={String(n)}>{n} chambre{n > 1 ? 's' : ''}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
-                <Label className="text-gray-700 font-semibold">Salles de bain</Label>
-                <Input
-                  type="number"
-                  placeholder="2"
-                  value={formData.propertyDetails.bathrooms}
-                  onChange={(e) => handleNestedChange('propertyDetails', 'bathrooms', e.target.value)}
-                  className="h-12 mt-2 rounded-xl border-2 border-gray-200"
-                />
+                <Label className="text-gray-700 font-semibold">🚿 Salles de bain</Label>
+                <Select 
+                  value={formData.propertyDetails.bathrooms} 
+                  onValueChange={(v) => handleNestedChange('propertyDetails', 'bathrooms', v)}
+                >
+                  <SelectTrigger className="h-12 mt-2 rounded-xl border-2 border-gray-200">
+                    <SelectValue placeholder="Nombre" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[1,2,3,4,5,6].map(n => (
+                      <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
-                <Label className="text-gray-700 font-semibold">Année construction</Label>
-                <Input
-                  type="number"
-                  placeholder="2020"
-                  value={formData.propertyDetails.yearBuilt}
-                  onChange={(e) => handleNestedChange('propertyDetails', 'yearBuilt', e.target.value)}
-                  className="h-12 mt-2 rounded-xl border-2 border-gray-200"
-                />
+                <Label className="text-gray-700 font-semibold">🏢 Étages</Label>
+                <Select 
+                  value={formData.propertyDetails.floors} 
+                  onValueChange={(v) => handleNestedChange('propertyDetails', 'floors', v)}
+                >
+                  <SelectTrigger className="h-12 mt-2 rounded-xl border-2 border-gray-200">
+                    <SelectValue placeholder="Nombre" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">Rez-de-chaussée</SelectItem>
+                    {[1,2,3,4,5].map(n => (
+                      <SelectItem key={n} value={String(n)}>{n} étage{n > 1 ? 's' : ''}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <Label className="text-gray-700 font-semibold">État du bien</Label>
                 <Select 
@@ -694,25 +883,97 @@ export default function CreateListingPage() {
                 </Select>
               </div>
               <div>
-                <Label className="text-gray-700 font-semibold">Meublé</Label>
+                <Label className="text-gray-700 font-semibold">Année de construction</Label>
+                <Input
+                  type="number"
+                  placeholder="2020"
+                  value={formData.propertyDetails.yearBuilt}
+                  onChange={(e) => handleNestedChange('propertyDetails', 'yearBuilt', e.target.value)}
+                  className="h-12 mt-2 rounded-xl border-2 border-gray-200"
+                />
+              </div>
+              <div>
+                <Label className="text-gray-700 font-semibold">🚗 Places de parking</Label>
                 <Select 
-                  value={formData.propertyDetails.furnished} 
-                  onValueChange={(v) => handleNestedChange('propertyDetails', 'furnished', v)}
+                  value={formData.propertyDetails.parking} 
+                  onValueChange={(v) => handleNestedChange('propertyDetails', 'parking', v)}
                 >
                   <SelectTrigger className="h-12 mt-2 rounded-xl border-2 border-gray-200">
-                    <SelectValue />
+                    <SelectValue placeholder="Sélectionner" />
                   </SelectTrigger>
                   <SelectContent>
-                    {constants?.furnishedOptions?.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    <SelectItem value="0">Pas de parking</SelectItem>
+                    {[1,2,3,4,5].map(n => (
+                      <SelectItem key={n} value={String(n)}>{n} place{n > 1 ? 's' : ''}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
+            {formData.category === 'RENT' && (
+              <div>
+                <Label className="text-gray-700 font-semibold">Ameublement</Label>
+                <div className="grid grid-cols-3 gap-3 mt-2">
+                  {constants?.furnishedOptions?.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => handleNestedChange('propertyDetails', 'furnished', opt.value)}
+                      className={`p-4 rounded-xl border-2 text-center transition-all ${
+                        formData.propertyDetails.furnished === opt.value
+                          ? 'border-kama-blue bg-kama-blue/5 text-kama-blue'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <span className="text-2xl block mb-1">
+                        {opt.value === 'UNFURNISHED' ? '🏠' : opt.value === 'SEMI_FURNISHED' ? '🛋️' : '🏡'}
+                      </span>
+                      <span className="text-sm font-medium">{opt.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div>
-              <Label className="text-gray-700 font-semibold mb-3 block">Équipements</Label>
+              <Label className="text-gray-700 font-semibold mb-3 block">Services disponibles</Label>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition">
+                  <Checkbox
+                    checked={formData.propertyDetails.hasWater}
+                    onCheckedChange={(checked) => handleNestedChange('propertyDetails', 'hasWater', checked)}
+                  />
+                  <div>
+                    <span className="font-semibold">💧 Eau courante</span>
+                    <p className="text-xs text-gray-500">SEEG ou forage</p>
+                  </div>
+                </label>
+                <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition">
+                  <Checkbox
+                    checked={formData.propertyDetails.hasElectricity}
+                    onCheckedChange={(checked) => handleNestedChange('propertyDetails', 'hasElectricity', checked)}
+                  />
+                  <div>
+                    <span className="font-semibold">⚡ Électricité</span>
+                    <p className="text-xs text-gray-500">SEEG ou groupe</p>
+                  </div>
+                </label>
+                <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition">
+                  <Checkbox
+                    checked={formData.propertyDetails.hasInternet}
+                    onCheckedChange={(checked) => handleNestedChange('propertyDetails', 'hasInternet', checked)}
+                  />
+                  <div>
+                    <span className="font-semibold">📶 Internet/Fibre</span>
+                    <p className="text-xs text-gray-500">Connexion disponible</p>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-gray-700 font-semibold mb-3 block">Équipements et commodités</Label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {constants?.propertyAmenities?.map((opt) => (
                   <label
@@ -740,7 +1001,7 @@ export default function CreateListingPage() {
           <>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <Label className="text-gray-700 font-semibold">Marque *</Label>
+                <Label className="text-gray-700 font-semibold">🚗 Marque *</Label>
                 <Select 
                   value={formData.vehicleDetails.brand} 
                   onValueChange={(v) => handleNestedChange('vehicleDetails', 'brand', v)}
@@ -758,7 +1019,7 @@ export default function CreateListingPage() {
               <div>
                 <Label className="text-gray-700 font-semibold">Modèle</Label>
                 <Input
-                  placeholder="Corolla"
+                  placeholder="Ex: Corolla, Classe C, X5..."
                   value={formData.vehicleDetails.model}
                   onChange={(e) => handleNestedChange('vehicleDetails', 'model', e.target.value)}
                   className="h-12 mt-2 rounded-xl border-2 border-gray-200"
@@ -768,19 +1029,25 @@ export default function CreateListingPage() {
                 <Label className="text-gray-700 font-semibold flex items-center gap-2">
                   <Calendar className="w-4 h-4" /> Année *
                 </Label>
-                <Input
-                  type="number"
-                  placeholder="2022"
-                  value={formData.vehicleDetails.year}
-                  onChange={(e) => handleNestedChange('vehicleDetails', 'year', e.target.value)}
-                  className={`h-12 mt-2 rounded-xl border-2 ${errors.year ? 'border-red-500' : 'border-gray-200'}`}
-                />
+                <Select 
+                  value={formData.vehicleDetails.year} 
+                  onValueChange={(v) => handleNestedChange('vehicleDetails', 'year', v)}
+                >
+                  <SelectTrigger className={`h-12 mt-2 rounded-xl border-2 ${errors.year ? 'border-red-500' : 'border-gray-200'}`}>
+                    <SelectValue placeholder="Année" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({length: 30}, (_, i) => 2025 - i).map(year => (
+                      <SelectItem key={year} value={String(year)}>{year}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
-                <Label className="text-gray-700 font-semibold">Kilométrage</Label>
+                <Label className="text-gray-700 font-semibold">📏 Kilométrage</Label>
                 <Input
                   type="number"
                   placeholder="50000"
@@ -788,6 +1055,7 @@ export default function CreateListingPage() {
                   onChange={(e) => handleNestedChange('vehicleDetails', 'mileage', e.target.value)}
                   className="h-12 mt-2 rounded-xl border-2 border-gray-200"
                 />
+                <span className="text-xs text-gray-500">km</span>
               </div>
               <div>
                 <Label className="text-gray-700 font-semibold flex items-center gap-2">
@@ -840,6 +1108,86 @@ export default function CreateListingPage() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <Label className="text-gray-700 font-semibold">🎨 Couleur</Label>
+                <Input
+                  placeholder="Ex: Noir, Blanc, Gris..."
+                  value={formData.vehicleDetails.color}
+                  onChange={(e) => handleNestedChange('vehicleDetails', 'color', e.target.value)}
+                  className="h-12 mt-2 rounded-xl border-2 border-gray-200"
+                />
+              </div>
+              <div>
+                <Label className="text-gray-700 font-semibold">🚪 Portes</Label>
+                <Select 
+                  value={formData.vehicleDetails.doors} 
+                  onValueChange={(v) => handleNestedChange('vehicleDetails', 'doors', v)}
+                >
+                  <SelectTrigger className="h-12 mt-2 rounded-xl border-2 border-gray-200">
+                    <SelectValue placeholder="Nombre" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[2,3,4,5].map(n => (
+                      <SelectItem key={n} value={String(n)}>{n} portes</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-gray-700 font-semibold">💺 Places</Label>
+                <Select 
+                  value={formData.vehicleDetails.seats} 
+                  onValueChange={(v) => handleNestedChange('vehicleDetails', 'seats', v)}
+                >
+                  <SelectTrigger className="h-12 mt-2 rounded-xl border-2 border-gray-200">
+                    <SelectValue placeholder="Nombre" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[2,4,5,6,7,8,9].map(n => (
+                      <SelectItem key={n} value={String(n)}>{n} places</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-gray-700 font-semibold mb-3 block">Documents et garanties</Label>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <label className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-xl cursor-pointer hover:bg-green-100 transition">
+                  <Checkbox
+                    checked={formData.vehicleDetails.firstHand}
+                    onCheckedChange={(checked) => handleNestedChange('vehicleDetails', 'firstHand', checked)}
+                  />
+                  <div>
+                    <span className="font-semibold text-green-800">✋ Première main</span>
+                    <p className="text-xs text-green-600">Un seul propriétaire</p>
+                  </div>
+                </label>
+                <label className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-xl cursor-pointer hover:bg-blue-100 transition">
+                  <Checkbox
+                    checked={formData.vehicleDetails.hasInsurance}
+                    onCheckedChange={(checked) => handleNestedChange('vehicleDetails', 'hasInsurance', checked)}
+                  />
+                  <div>
+                    <span className="font-semibold text-blue-800">🛡️ Assuré</span>
+                    <p className="text-xs text-blue-600">Assurance valide</p>
+                  </div>
+                </label>
+                <label className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl cursor-pointer hover:bg-amber-100 transition">
+                  <Checkbox
+                    checked={formData.vehicleDetails.hasTechnicalControl}
+                    onCheckedChange={(checked) => handleNestedChange('vehicleDetails', 'hasTechnicalControl', checked)}
+                  />
+                  <div>
+                    <span className="font-semibold text-amber-800">🔧 Visite technique</span>
+                    <p className="text-xs text-amber-600">Contrôle à jour</p>
+                  </div>
+                </label>
               </div>
             </div>
 
