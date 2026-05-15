@@ -26,7 +26,6 @@ export default function CreateListingPage() {
   const [loading, setLoading] = useState(false);
   const [constants, setConstants] = useState(null);
   const [currentStep, setCurrentStep] = useState(1);
-  const totalSteps = 4;
 
   // Form data
   const [formData, setFormData] = useState({
@@ -121,6 +120,17 @@ export default function CreateListingPage() {
 
   const [errors, setErrors] = useState({});
 
+  // Total steps - 3 étapes pour Location, 4 pour Vente
+  const totalSteps = formData.category === 'RENT' ? 3 : 4;
+  
+  // Labels des étapes selon la catégorie
+  const getStepLabels = () => {
+    if (formData.category === 'RENT') {
+      return ['Type', 'Détails & Location', 'Médias'];
+    }
+    return ['Type', 'Détails', 'Spécificités', 'Médias'];
+  };
+
   // Handlers pour le téléversement
   const handleImagesUpload = (files) => {
     setFormData(prev => ({
@@ -208,15 +218,24 @@ export default function CreateListingPage() {
         if (!formData.address) newErrors.address = 'Adresse requise';
         break;
       case 3:
-        // Validation spécifique selon le type
-        if (formData.type === 'LAND') {
-          if (!formData.landDetails.surface) newErrors.surface = 'Superficie requise';
-        } else if (formData.type === 'HOUSE') {
-          if (!formData.propertyDetails.surface) newErrors.surface = 'Surface requise';
-        } else if (formData.type === 'CAR') {
-          if (!formData.vehicleDetails.brand) newErrors.brand = 'Marque requise';
-          if (!formData.vehicleDetails.year) newErrors.year = 'Année requise';
+        // Pour la Location, l'étape 3 est Médias (pas de validation spécifique)
+        // Pour la Vente, l'étape 3 est Spécificités
+        if (formData.category === 'SALE') {
+          // Validation spécifique selon le type (uniquement pour Vente)
+          if (formData.type === 'LAND') {
+            if (!formData.landDetails.surface) newErrors.surface = 'Superficie requise';
+          } else if (formData.type === 'HOUSE') {
+            if (!formData.propertyDetails.surface) newErrors.surface = 'Surface requise';
+          } else if (formData.type === 'CAR') {
+            if (!formData.vehicleDetails.brand) newErrors.brand = 'Marque requise';
+            if (!formData.vehicleDetails.year) newErrors.year = 'Année requise';
+          }
         }
+        // Pour la Location, étape 3 = Médias, pas de validation requise
+        break;
+      case 4:
+        // Étape 4 = Médias (uniquement pour Vente)
+        // Pas de validation obligatoire pour les médias
         break;
     }
     
@@ -321,34 +340,40 @@ export default function CreateListingPage() {
     }
   };
 
-  const renderStepIndicator = () => (
-    <div className="mb-8">
-      <div className="flex items-center justify-between max-w-lg mx-auto">
-        {[1, 2, 3, 4].map((step) => (
-          <div key={step} className="flex items-center">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all ${
-              currentStep >= step 
-                ? 'bg-gradient-to-r from-kama-gold to-yellow-500 text-white shadow-lg' 
-                : 'bg-gray-200 text-gray-500'
-            }`}>
-              {currentStep > step ? <CheckCircle className="w-5 h-5" /> : step}
+  const renderStepIndicator = () => {
+    const stepLabels = getStepLabels();
+    const steps = Array.from({ length: totalSteps }, (_, i) => i + 1);
+    
+    return (
+      <div className="mb-8">
+        <div className="flex items-center justify-center">
+          {steps.map((step, index) => (
+            <div key={step} className="flex items-center">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all ${
+                currentStep >= step 
+                  ? 'bg-gradient-to-r from-kama-gold to-yellow-500 text-white shadow-lg' 
+                  : 'bg-gray-200 text-gray-500'
+              }`}>
+                {currentStep > step ? <CheckCircle className="w-5 h-5" /> : step}
+              </div>
+              {index < steps.length - 1 && (
+                <div className={`w-16 h-1 mx-2 rounded ${
+                  currentStep > step ? 'bg-kama-gold' : 'bg-gray-200'
+                }`}></div>
+              )}
             </div>
-            {step < 4 && (
-              <div className={`w-16 h-1 mx-2 rounded ${
-                currentStep > step ? 'bg-kama-gold' : 'bg-gray-200'
-              }`}></div>
-            )}
-          </div>
-        ))}
+          ))}
+        </div>
+        <div className="flex justify-center gap-16 mt-2 text-xs text-gray-500">
+          {stepLabels.map((label, index) => (
+            <span key={index} className={currentStep === index + 1 ? 'text-kama-gold font-semibold' : ''}>
+              {label}
+            </span>
+          ))}
+        </div>
       </div>
-      <div className="flex justify-between max-w-lg mx-auto mt-2 text-xs text-gray-500 px-2">
-        <span>Type</span>
-        <span>Détails</span>
-        <span>Spécificités</span>
-        <span>Médias</span>
-      </div>
-    </div>
-  );
+    );
+  };
 
   // Step 1: Type Selection
   const renderStep1 = () => (
@@ -1512,8 +1537,10 @@ export default function CreateListingPage() {
           <form onSubmit={handleSubmit}>
             {currentStep === 1 && renderStep1()}
             {currentStep === 2 && renderStep2()}
-            {currentStep === 3 && renderStep3()}
-            {currentStep === 4 && renderStep4()}
+            {/* Pour Location: étape 3 = Médias, Pour Vente: étape 3 = Spécificités */}
+            {currentStep === 3 && formData.category === 'SALE' && renderStep3()}
+            {currentStep === 3 && formData.category === 'RENT' && renderStep4()}
+            {currentStep === 4 && formData.category === 'SALE' && renderStep4()}
 
             {/* Navigation Buttons */}
             <div className="mt-8 flex justify-between">
