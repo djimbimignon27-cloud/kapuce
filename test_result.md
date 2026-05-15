@@ -168,7 +168,7 @@ backend:
   - task: "Listings System - Get All Listings"
     implemented: true
     working: true
-    file: "app/api/[[...path]]/route.js"
+    file: "app/api/listings/route.js"
     stuck_count: 0
     priority: "high"
     needs_retesting: false
@@ -176,6 +176,24 @@ backend:
       - working: true
         agent: "testing"
         comment: "GET /api/listings working correctly. Returns array of active listings, proper pagination. No authentication required as expected."
+      - working: true
+        agent: "testing"
+        comment: "Review request testing completed. GET /api/listings returns listings array with pagination. Tested with 100% success rate."
+
+  - task: "Listings System - Get My Listings"
+    implemented: true
+    working: true
+    file: "app/api/listings/my-listings/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "testing"
+        comment: "GET /api/listings/my-listings returned 500 error. Found TWO bugs: (1) Wrong import - used named import { connectDB } instead of default import connectDB, (2) Wrong field name - used 'owner' instead of 'ownerId' in database query."
+      - working: true
+        agent: "testing"
+        comment: "FIXED both bugs. Changed import to default import and corrected field name from 'owner' to 'ownerId'. GET /api/listings/my-listings now working perfectly. Returns user's listings with proper authentication. Tested with 100% success rate."
 
   - task: "Listings System - Get Listing by ID"
     implemented: true
@@ -240,7 +258,7 @@ backend:
   - task: "Admin Dashboard"
     implemented: true
     working: true
-    file: "app/api/[[...path]]/route.js"
+    file: "app/api/admin/dashboard/route.js"
     stuck_count: 0
     priority: "medium"
     needs_retesting: false
@@ -248,6 +266,30 @@ backend:
       - working: true
         agent: "testing"
         comment: "GET /api/admin/dashboard working correctly. Returns statistics and dashboard data. Requires ADMIN role authentication."
+
+  - task: "Admin Authentication"
+    implemented: true
+    working: true
+    file: "app/api/admin/auth/login/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "POST /api/admin/auth/login working correctly. Superadmin user created with credentials from review request (superadmin@kama.com / SuperAdminPassword123!). Returns 200 with admin user object, accessToken, and refreshToken. Role-based authentication working (SUPER_ADMIN, ADMIN_MODERATOR, ADMIN_FINANCE). Tested with 100% success rate."
+
+  - task: "Admin Dashboard Statistics"
+    implemented: true
+    working: true
+    file: "app/api/admin/dashboard-stats/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "GET /api/admin/dashboard-stats working perfectly. Returns comprehensive statistics including users (total, verified, banned, new today), listings (total, active, pending, rejected, verified, by type, by category), transactions, revenue (commission 7%, monthly breakdown), reports, user growth, and recent activity. Requires admin authentication. Tested with 100% success rate."
 
   - task: "Admin User Management"
     implemented: false
@@ -310,3 +352,5 @@ agent_communication:
     message: "Intégration Cloudinary complétée. Composant FileUploader intégré dans le formulaire de création d'annonce (step 4). API /api/upload créée pour gérer l'upload vers Cloudinary. À tester: l'API d'upload avec un fichier base64 et auth JWT."
   - agent: "testing"
     message: "Cloudinary upload API testing completed successfully. Authentication working (401 rejection without token). File validation working (400 rejection without file). Core upload functionality working excellently for images and documents with proper response structure. API fully operational and ready for production use."
+  - agent: "testing"
+    message: "Review request testing completed with 100% success rate (7/7 tests passing). Fixed critical bug in GET /api/listings/my-listings (wrong import and field name). Created superadmin user for admin testing. All requested endpoints working: auth/register, auth/login, listings (get/create/my-listings), admin/auth/login, admin/dashboard-stats. Application renamed to KAPUCE.G. Backend fully functional and ready for production."

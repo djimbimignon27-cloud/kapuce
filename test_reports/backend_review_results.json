@@ -1,0 +1,79 @@
+[
+  {
+    "test": "POST /api/auth/register",
+    "success": true,
+    "details": "Utilisateur créé: proprietaire.gabon.1778887471@kapuce.com (role: OWNER)",
+    "response_data": {
+      "user_id": "6a07ab301023b1418ad38993",
+      "email": "proprietaire.gabon.1778887471@kapuce.com"
+    },
+    "timestamp": "2026-05-15T23:24:32.552368"
+  },
+  {
+    "test": "POST /api/auth/login",
+    "success": true,
+    "details": "Connexion réussie - Token JWT reçu",
+    "response_data": {
+      "user": "proprietaire.gabon.1778887471@kapuce.com"
+    },
+    "timestamp": "2026-05-15T23:24:33.114206"
+  },
+  {
+    "test": "GET /api/listings",
+    "success": true,
+    "details": "Liste récupérée: 0 annonces trouvées",
+    "response_data": {
+      "count": 0,
+      "pagination": {
+        "page": 1,
+        "limit": 12,
+        "total": 0,
+        "pages": 0
+      }
+    },
+    "timestamp": "2026-05-15T23:24:33.307565"
+  },
+  {
+    "test": "POST /api/listings",
+    "success": true,
+    "details": "Annonce créée avec succès - ID: 6a07ab311023b1418ad3899a",
+    "response_data": {
+      "listing_id": "6a07ab311023b1418ad3899a",
+      "title": "Villa Moderne à Libreville - Quartier Batterie IV",
+      "status": "PENDING",
+      "price": 125000000
+    },
+    "timestamp": "2026-05-15T23:24:33.554847"
+  },
+  {
+    "test": "GET /api/listings/my-listings",
+    "success": true,
+    "details": "Mes annonces récupérées: 1 annonce(s) - Annonce créée trouvée: True",
+    "response_data": {
+      "count": 1,
+      "listings_found": 1
+    },
+    "timestamp": "2026-05-15T23:24:33.768701"
+  },
+  {
+    "test": "POST /api/admin/auth/login",
+    "success": true,
+    "details": "Connexion admin réussie - Role: SUPER_ADMIN",
+    "response_data": {
+      "admin_email": "superadmin@kama.com"
+    },
+    "timestamp": "2026-05-15T23:24:34.026018"
+  },
+  {
+    "test": "GET /api/admin/dashboard-stats",
+    "success": true,
+    "details": "Statistiques récupérées - Users: 9, Listings: 3",
+    "response_data": {
+      "users_total": 9,
+      "listings_total": 3,
+      "transactions_total": 0,
+      "revenue_commission": 0
+    },
+    "timestamp": "2026-05-15T23:24:34.638144"
+  }
+]

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { connectDB } from '@/lib/db';
+import connectDB from '@/lib/db';
 import Listing from '@/lib/models/Listing';
 import jwt from 'jsonwebtoken';
 
@@ -30,7 +30,7 @@ export async function GET(request) {
     }
 
     // Fetch user's listings
-    const listings = await Listing.find({ owner: decoded.userId })
+    const listings = await Listing.find({ ownerId: decoded.userId })
       .sort({ createdAt: -1 })
       .lean();
 
