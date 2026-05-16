@@ -181,10 +181,12 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                <Button className="w-full mt-6 bg-gradient-to-r from-kama-blue to-blue-600 text-white rounded-xl">
-                  <Edit className="w-4 h-4 mr-2" />
-                  Modifier le profil
-                </Button>
+                <Link href="/dashboard/profile">
+                  <Button className="w-full mt-6 bg-gradient-to-r from-kama-blue to-blue-600 text-white rounded-xl">
+                    <Edit className="w-4 h-4 mr-2" />
+                    Modifier le profil
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
 
@@ -206,10 +208,12 @@ export default function DashboardPage() {
                     Mes favoris
                   </Button>
                 </Link>
-                <Button variant="outline" className="w-full justify-start rounded-xl">
-                  <Settings className="w-5 h-5 mr-3" />
-                  Paramètres
-                </Button>
+                <Link href="/dashboard/settings" className="block">
+                  <Button variant="outline" className="w-full justify-start rounded-xl">
+                    <Settings className="w-5 h-5 mr-3" />
+                    Paramètres
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
           </div>
