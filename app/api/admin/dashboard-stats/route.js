@@ -4,6 +4,7 @@ import User from '@/lib/models/User';
 import Listing from '@/lib/models/Listing';
 import Transaction from '@/lib/models/Transaction';
 import Report from '@/lib/models/Report';
+import FraudAlert from '@/lib/models/FraudAlert';
 import AdminLog from '@/lib/models/AdminLog';
 import { authenticateRequest } from '@/lib/auth';
 import { checkAdminPermission, hasPermission } from '@/lib/adminAuth';
@@ -117,6 +118,10 @@ export async function GET(request) {
     const pendingReports = await Report.countDocuments({ status: 'PENDING' });
     const resolvedReports = await Report.countDocuments({ status: 'RESOLVED' });
 
+    // Alertes de fraude
+    const pendingFraudAlerts = await FraudAlert.countDocuments({ status: 'PENDING' });
+    const totalFraudAlerts = await FraudAlert.countDocuments();
+
     // Distribution par type d'annonce
     const listingsByType = await Listing.aggregate([
       { $match: { status: 'ACTIVE' } },
@@ -184,6 +189,10 @@ export async function GET(request) {
       reports: {
         pending: pendingReports,
         resolved: resolvedReports,
+      },
+      fraudAlerts: {
+        pending: pendingFraudAlerts,
+        total: totalFraudAlerts,
       },
       growth: {
         users: userGrowth,

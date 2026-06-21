@@ -227,6 +227,8 @@ export default function AdminDashboard() {
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, badge: null },
     { id: 'users', label: 'Utilisateurs', icon: Users, badge: stats?.users?.total || 0 },
     { id: 'listings', label: 'Annonces', icon: FileText, badge: stats?.listings?.pending || 0, color: 'yellow' },
+    { id: 'alerts', label: 'Alertes Fraude', icon: Shield, badge: stats?.fraudAlerts?.pending || 0, color: 'red', link: '/admin/alerts' },
+    { id: 'messages', label: 'Messages', icon: MessageCircle, badge: null, link: '/admin/messages' },
     { id: 'transactions', label: 'Transactions', icon: DollarSign, badge: stats?.transactions?.total || 0 },
     { id: 'reports', label: 'Signalements', icon: AlertTriangle, badge: stats?.reports?.pending || 0, color: 'red' },
   ];
@@ -279,6 +281,33 @@ export default function AdminDashboard() {
             {menuItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
+              
+              // Si l'item a un lien externe, utiliser Link
+              if (item.link) {
+                return (
+                  <Link href={item.link} key={item.id}>
+                    <div
+                      className={`w-full flex items-center ${sidebarOpen ? 'justify-between px-4' : 'justify-center'} py-3.5 rounded-xl transition-all duration-200 text-gray-400 hover:text-white hover:bg-gray-800/50 cursor-pointer`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Icon className="w-5 h-5 flex-shrink-0" />
+                        {sidebarOpen && <span className="font-medium">{item.label}</span>}
+                      </div>
+                      {sidebarOpen && item.badge !== null && item.badge > 0 && (
+                        <Badge className={`${
+                          item.color === 'yellow' ? 'bg-yellow-500' :
+                          item.color === 'red' ? 'bg-red-500' :
+                          'bg-blue-500'
+                        } text-white border-0`}>
+                          {item.badge}
+                        </Badge>
+                      )}
+                    </div>
+                  </Link>
+                );
+              }
+              
+              // Sinon, utiliser le bouton normal
               return (
                 <button
                   key={item.id}

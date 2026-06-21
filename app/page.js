@@ -503,26 +503,53 @@ export default function App() {
         </div>
         
         <div className="relative container mx-auto px-4 text-center">
-          <h2 className="text-4xl md:text-5xl font-black text-white mb-6">
-            Prêt à commencer?
-          </h2>
-          <p className="text-xl text-blue-100 mb-10 max-w-2xl mx-auto">
-            Rejoignez des milliers d'utilisateurs qui font confiance à KAPUCE.G pour leurs transactions
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/auth/choose-account">
-              <Button className="bg-white text-kama-blue hover:bg-gray-100 font-bold px-8 py-6 text-lg rounded-xl shadow-lg hover:shadow-xl transition-all">
-                <User className="w-5 h-5 mr-2" />
-                Créer un compte gratuit
-              </Button>
-            </Link>
-            <Link href="/listings">
-              <Button className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-kama-blue font-bold px-8 py-6 text-lg rounded-xl transition-all">
-                <Search className="w-5 h-5 mr-2" />
-                Explorer les annonces
-              </Button>
-            </Link>
-          </div>
+          {user ? (
+            <>
+              <h2 className="text-4xl md:text-5xl font-black text-white mb-6">
+                Publiez votre annonce
+              </h2>
+              <p className="text-xl text-blue-100 mb-10 max-w-2xl mx-auto">
+                Vendez ou louez vos biens en toute simplicité sur KAPUCE.G
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link href="/listings/create">
+                  <Button className="bg-gradient-to-r from-kama-gold to-yellow-500 text-white hover:shadow-lg font-bold px-8 py-6 text-lg rounded-xl shadow-lg hover:shadow-xl transition-all">
+                    <PlusCircle className="w-5 h-5 mr-2" />
+                    Publier une annonce
+                  </Button>
+                </Link>
+                <Link href="/dashboard">
+                  <Button className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-kama-blue font-bold px-8 py-6 text-lg rounded-xl transition-all">
+                    <User className="w-5 h-5 mr-2" />
+                    Mon tableau de bord
+                  </Button>
+                </Link>
+              </div>
+            </>
+          ) : (
+            <>
+              <h2 className="text-4xl md:text-5xl font-black text-white mb-6">
+                Prêt à commencer?
+              </h2>
+              <p className="text-xl text-blue-100 mb-10 max-w-2xl mx-auto">
+                Rejoignez des milliers d'utilisateurs qui font confiance à KAPUCE.G pour leurs transactions
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link href="/auth/choose-account">
+                  <Button className="bg-white text-kama-blue hover:bg-gray-100 font-bold px-8 py-6 text-lg rounded-xl shadow-lg hover:shadow-xl transition-all">
+                    <User className="w-5 h-5 mr-2" />
+                    Créer un compte gratuit
+                  </Button>
+                </Link>
+                <Link href="/listings">
+                  <Button className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-kama-blue font-bold px-8 py-6 text-lg rounded-xl transition-all">
+                    <Search className="w-5 h-5 mr-2" />
+                    Explorer les annonces
+                  </Button>
+                </Link>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
