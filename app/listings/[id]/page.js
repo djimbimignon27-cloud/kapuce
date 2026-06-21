@@ -307,8 +307,17 @@ export default function ListingDetailPage() {
               
               <CardContent className="p-6 space-y-4">
                 <Button 
+                  onClick={() => router.push(`/pay-listing?listingId=${listing._id}`)}
+                  className="w-full h-16 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold text-lg rounded-xl shadow-xl"
+                >
+                  <DollarSign className="w-6 h-6 mr-2" />
+                  {listing.category === 'SALE' ? 'Acheter ce Bien' : 'Louer ce Bien'}
+                </Button>
+
+                <Button 
                   onClick={() => router.push(`/messages?newConversation=true&receiverId=${listing.ownerId?._id}&listingId=${listing._id}&listingTitle=${encodeURIComponent(listing.title)}`)}
-                  className="w-full h-14 bg-gradient-to-r from-kama-gold to-yellow-600 hover:from-kama-gold/90 hover:to-yellow-600/90 text-white font-semibold rounded-xl shadow-lg"
+                  variant="outline"
+                  className="w-full h-14 border-2 border-kama-gold text-kama-gold hover:bg-kama-gold/5 font-semibold rounded-xl"
                 >
                   <MessageCircle className="w-5 h-5 mr-2" />
                   Contacter via Messagerie
