@@ -9,8 +9,22 @@ export async function GET(request, { params }) {
     await connectDB();
     const { id } = params;
 
+    // Vérifier si c'est un admin
+    let isAdmin = false;
+    try {
+      const auth = await authenticateRequest(request);
+      isAdmin = auth.authenticated && ['ADMIN', 'SUPER_ADMIN'].includes(auth.role);
+    } catch (error) {
+      // Pas authentifié, continue comme utilisateur normal
+    }
+
+    // Sélectionner les champs selon le rôle
+    const ownerFields = isAdmin 
+      ? 'fullName email phone profilePicture isVerified' 
+      : 'fullName profilePicture isVerified';
+
     const listing = await Listing.findById(id)
-      .populate('ownerId', 'fullName email phone profilePicture isVerified');
+      .populate('ownerId', ownerFields);
 
     if (!listing) {
       return NextResponse.json(

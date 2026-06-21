@@ -56,8 +56,25 @@ export async function GET(request) {
     const sortOrder = searchParams.get('sortOrder') === 'asc' ? 1 : -1;
     const sort = { [sortBy]: sortOrder };
 
+    // Vérifier si c'est un admin
+    let isAdmin = false;
+    try {
+      const authHeader = request.headers.get('authorization');
+      if (authHeader) {
+        const auth = await authenticateRequest(request);
+        isAdmin = auth.authenticated && ['ADMIN', 'SUPER_ADMIN'].includes(auth.role);
+      }
+    } catch (error) {
+      // Pas authentifié, continue comme utilisateur normal
+    }
+
+    // Sélectionner les champs selon le rôle
+    const ownerFields = isAdmin 
+      ? 'fullName email phone profilePicture' 
+      : 'fullName profilePicture';
+
     const listings = await Listing.find(filter)
-      .populate('ownerId', 'fullName email phone profilePicture')
+      .populate('ownerId', ownerFields)
       .sort(sort)
       .skip(skip)
       .limit(limit);

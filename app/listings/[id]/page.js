@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
-  ArrowLeft, Home, Car, MapPin, Heart, Share2, Phone, Mail, 
+  ArrowLeft, Home, Car, MapPin, Heart, Share2,
   MessageCircle, CheckCircle, Eye, Calendar, User, Shield, 
   ChevronLeft, ChevronRight, Star, Building2, Sparkles
 } from 'lucide-react';
@@ -307,34 +307,22 @@ export default function ListingDetailPage() {
               
               <CardContent className="p-6 space-y-4">
                 <Button 
-                  onClick={() => handleContact('téléphone')}
-                  className="w-full h-14 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold rounded-xl"
-                >
-                  <Phone className="w-5 h-5 mr-2" />
-                  Appeler
-                </Button>
-                
-                <Button 
-                  onClick={() => handleContact('WhatsApp')}
-                  variant="outline"
-                  className="w-full h-14 border-2 border-green-500 text-green-600 hover:bg-green-50 font-semibold rounded-xl"
+                  onClick={() => router.push(`/messages?newConversation=true&receiverId=${listing.ownerId?._id}&listingId=${listing._id}&listingTitle=${encodeURIComponent(listing.title)}`)}
+                  className="w-full h-14 bg-gradient-to-r from-kama-gold to-yellow-600 hover:from-kama-gold/90 hover:to-yellow-600/90 text-white font-semibold rounded-xl shadow-lg"
                 >
                   <MessageCircle className="w-5 h-5 mr-2" />
-                  WhatsApp
-                </Button>
-                
-                <Button 
-                  onClick={() => handleContact('email')}
-                  variant="outline"
-                  className="w-full h-14 border-2 border-kama-blue text-kama-blue hover:bg-kama-blue/5 font-semibold rounded-xl"
-                >
-                  <Mail className="w-5 h-5 mr-2" />
-                  Email
+                  Contacter via Messagerie
                 </Button>
 
-                <div className="pt-4 border-t border-gray-100">
-                  <p className="text-sm text-gray-500 text-center">
-                    ⚠️ Ne payez jamais à l'avance sans avoir visité le bien
+                <div className="pt-4 border-t border-gray-100 space-y-3">
+                  <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
+                    <Shield className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                    <p className="text-sm text-blue-900">
+                      <strong>Communication sécurisée :</strong> Utilisez uniquement la messagerie KAPUCE.G
+                    </p>
+                  </div>
+                  <p className="text-xs text-gray-500 text-center">
+                    ⚠️ Ne partagez jamais vos coordonnées personnelles (téléphone, email, WhatsApp) dans les messages
                   </p>
                 </div>
               </CardContent>
