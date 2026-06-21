@@ -186,6 +186,67 @@ export async function PUT(request) {
         newCommissionAmount,
         newNetAmount: newSellerReceives,
       });
+    } else if (action === 'validate_payment') {
+      // Valider le paiement reçu par KAPUCE.G
+      transaction.status = 'PAID';
+      transaction.paidAt = new Date();
+      transaction.adminModified = true;
+      transaction.adminModifiedAt = new Date();
+      transaction.adminModifiedBy = authCheck.decoded.userId;
+      if (adminNotes) transaction.notes = adminNotes;
+      
+      await transaction.save();
+
+      // Récupérer les infos du vendeur et de l'annonce
+      const [seller, listing] = await Promise.all([
+        User.findById(transaction.sellerId),
+        Listing.findById(transaction.listingId),
+      ]);
+
+      // Créer une conversation ou récupérer existante entre KAPUCE.G (système) et le vendeur
+      let conversation = await Conversation.findOne({
+        participants: { $all: [transaction.sellerId] },
+        isSystemConversation: true,
+      });
+
+      if (!conversation) {
+        conversation = new Conversation({
+          participants: [transaction.sellerId],
+          isSystemConversation: true,
+          isActive: true,
+        });
+        await conversation.save();
+      }
+
+      // Créer un message de notification dans la messagerie
+      const notificationMessage = new Message({
+        conversationId: conversation._id,
+        senderId: 'SYSTEM', // Message système
+        receiverId: transaction.sellerId,
+        content: `🎉 Bonne nouvelle ! Le paiement pour votre ${listing?.type === 'HOUSE' ? 'bien immobilier' : listing?.type === 'CAR' ? 'véhicule' : 'terrain'} "${listing?.title}" a été validé par KAPUCE.G.\n\n💰 Montant: ${new Intl.NumberFormat('fr-FR').format(transaction.amount)} FCFA\n💵 Vous recevrez: ${new Intl.NumberFormat('fr-FR').format(transaction.sellerReceives)} FCFA\n⏰ Délai: Sous 24 heures sur votre compte Mobile Money\n\n✅ Transaction ID: ${transaction._id}`,
+        status: 'SENT',
+        isSystemMessage: true,
+      });
+      await notificationMessage.save();
+
+      // Mettre à jour la conversation
+      conversation.lastMessage = {
+        content: notificationMessage.content,
+        senderId: 'SYSTEM',
+        createdAt: new Date(),
+      };
+      conversation.updatedAt = new Date();
+      await conversation.save();
+
+      return NextResponse.json({
+        success: true,
+        message: 'Paiement validé et notification envoyée au propriétaire',
+        transaction: {
+          _id: transaction._id,
+          status: transaction.status,
+          sellerReceives: transaction.sellerReceives,
+        },
+      });
     } else if (action === 'update_status') {
       if (!['PENDING', 'COMPLETED', 'CANCELLED', 'REFUNDED'].includes(newStatus)) {
         return NextResponse.json({ error: 'Statut invalide' }, { status: 400 });

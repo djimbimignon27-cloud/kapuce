@@ -131,6 +131,50 @@ export default function AdminTransactionsPage() {
     }
   };
 
+  const handleValidatePayment = async (transactionId) => {
+    if (!confirm('Confirmer la validation du paiement ? Le propriétaire sera notifié dans la messagerie.')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('adminAccessToken');
+      const response = await fetch('/api/admin/transactions', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          transactionId,
+          action: 'validate_payment',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: '✅ Paiement validé',
+          description: 'Le propriétaire a reçu une notification dans sa messagerie',
+        });
+        fetchTransactions(token);
+      } else {
+        toast({
+          title: 'Erreur',
+          description: data.error || 'Impossible de valider le paiement',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('Erreur:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Erreur de connexion',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const getStatusBadge = (status) => {
     const styles = {
       INITIATED: 'bg-blue-100 text-blue-700',
@@ -291,6 +335,16 @@ export default function AdminTransactionsPage() {
                   )}
 
                   <div className="flex items-center gap-3">
+                    {tx.status === 'PENDING_PAYMENT' && (
+                      <Button
+                        onClick={() => handleValidatePayment(tx._id)}
+                        className="bg-green-500 hover:bg-green-600 text-white gap-2"
+                        size="sm"
+                      >
+                        <CheckCircle className="w-4 h-4" />
+                        Valider le Paiement
+                      </Button>
+                    )}
                     <Button
                       onClick={() => openEditDialog(tx)}
                       className="bg-kama-gold hover:bg-kama-gold/80 text-white gap-2"
