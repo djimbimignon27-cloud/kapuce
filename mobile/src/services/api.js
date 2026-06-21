@@ -1,7 +1,13 @@
 import axios from 'axios';
 import Constants from 'expo-constants';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl || 'https://digital-marketplace-186.preview.emergentagent.com/api';
+// Utiliser les variables d'environnement en priorité
+const API_URL = 
+  process.env.EXPO_PUBLIC_API_URL || 
+  Constants.expoConfig?.extra?.apiUrl || 
+  'https://digital-marketplace-186.preview.emergentagent.com/api';
+
+console.log('API URL configurée:', API_URL);
 
 const api = axios.create({
   baseURL: API_URL,

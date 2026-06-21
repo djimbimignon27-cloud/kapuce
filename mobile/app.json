@@ -38,7 +38,6 @@
       "bundler": "metro"
     },
     "extra": {
-      "apiUrl": "https://digital-marketplace-186.preview.emergentagent.com/api",
       "eas": {
         "projectId": "kapuce-gabon"
       }
