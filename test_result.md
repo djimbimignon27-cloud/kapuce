@@ -529,6 +529,21 @@ frontend:
         agent: "testing"
         comment: "FIXED: Import manquant de MessageCircle ajouté dans lucide-react imports (ligne 15). Dashboard admin testé et fonctionnel. Interface complète avec: sidebar avec logo 'KAPUCE.G Admin', menu latéral avec tous les items (Dashboard, Utilisateurs, Annonces, Alertes Fraude, Messages, Transactions, Signalements), nouveaux liens 'Alertes Fraude' et 'Messages' fonctionnels (utilisant Link de Next.js), badges affichés pour alertes en attente, stats cards visibles, actions rapides, design moderne. Navigation vers /admin/alerts et /admin/messages opérationnelle. Compte admin créé: superadmin@kapuce.com / SuperAdminPassword123!"
 
+  - task: "Page Admin - Gestion des Transactions"
+    implemented: true
+    working: true
+    file: "app/admin/transactions-management/page.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Page complète de gestion des transactions avec modification de commission par transaction. Interface avec header, bannière dorée explicative, filtres de statut (ALL, INITIATED, PENDING_PAYMENT, PAID, COMPLETED, CANCELLED), cartes de transactions détaillées avec 4 montants en grille, dialog de modification avec slider 0-20%, calcul temps réel, notes admin."
+      - working: true
+        agent: "testing"
+        comment: "✅ PAGE ENTIÈREMENT FONCTIONNELLE - Tests complets réussis (12/12 - 100%). INTERFACE: ✅ Header 'Gestion des Transactions' avec icône dorée, ✅ Bannière dorée explicative sur modification des commissions, ✅ 6 filtres de statut (Toutes, INITIATED, PENDING_PAYMENT, PAID, COMPLETED, CANCELLED) tous fonctionnels. CARTES TRANSACTIONS: ✅ Affichage complet avec status badge (coloré selon statut), payment method badge, titre annonce, acheteur/vendeur, date, ✅ 4 MONTANTS EN GRILLE: Montant Total (100,000 FCFA), Taux Commission (5%), Commission KAPUCE.G (5,000 FCFA doré), Vendeur Reçoit (95,000 FCFA vert), ✅ Bouton 'Modifier Commission' (doré), ✅ Badge 'Modifié par admin' (violet) affiché après modification. DIALOG MODIFICATION: ✅ Ouverture correcte avec titre et icône, ✅ Info transaction (titre, montant), ✅ SLIDER 0-20% (step 0.5) fonctionnel et déplaçable, ✅ Affichage temps réel du taux (gros chiffre doré), ✅ CALCUL AUTOMATIQUE EN TEMPS RÉEL: Commission et montant vendeur mis à jour instantanément lors du déplacement du slider, ✅ Textarea notes admin fonctionnelle, ✅ Boutons Annuler/Confirmer opérationnels. SOUMISSION: ✅ Toast de succès affiché ('Commission mise à jour - Nouveau taux: 5% - Commission: 5000 FCFA'), ✅ Dialog se ferme automatiquement, ✅ Liste se rafraîchit avec nouveau taux persisté. DESIGN: ✅ Theme dark cohérent (bg-gray-900/800), ✅ Couleur dorée (kama-gold) pour commissions et boutons, ✅ Badges colorés par statut, ✅ Grid responsive 4 colonnes pour montants, ✅ Dialog responsive. Navigation depuis dashboard opérationnelle via lien 'Transactions' dans sidebar."
+
   - task: "Admin - Modifier la commission d'une transaction"
     implemented: true
     working: true
@@ -582,9 +597,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Admin - Modifier la commission d'une transaction"
-    - "Admin - Liste des transactions"
-    - "Admin - Créer une transaction"
+    - "Page Admin - Gestion des Transactions"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
@@ -604,6 +617,8 @@ agent_communication:
     message: "✅ TESTS FRONTEND COMPLÉTÉS - Toutes les nouvelles pages testées et fonctionnelles. BUGS CORRIGÉS: (1) app/admin/alerts/page.js ligne 57: 'adminToken' → 'adminAccessToken', (2) app/admin/dashboard/page.js ligne 15: Import manquant de MessageCircle ajouté, (3) Compte admin créé dans MongoDB avec champ 'passwordHash' correct. RÉSULTATS: ✅ Page Messagerie Utilisateur (/messages) - Interface complète avec liste conversations, chat, recherche, avertissement sécurité. ✅ Page Paiement Mobile Money (/payment) - Numéros Airtel (077347262) et Moov (065216069) affichés, boutons copier fonctionnels. ✅ Dashboard Admin (/admin/dashboard) - Sidebar avec nouveaux liens 'Alertes Fraude' et 'Messages' opérationnels. ✅ Page Alertes de Fraude (/admin/alerts) - Stats, filtres, actions admin fonctionnels, design dark. ✅ Page Supervision Messages (/admin/messages) - Filtres, contenu filtré/original visible, design dark. IDENTIFIANTS ADMIN: superadmin@kapuce.com / SuperAdminPassword123! - Toutes les pages nécessitent authentification (redirection vers login si non connecté)."
   - agent: "testing"
     message: "🎉 NOUVELLE FONCTIONNALITÉ TESTÉE - MODIFICATION DES COMMISSIONS PAR TRANSACTION - 100% RÉUSSITE (11/11 tests). ✅ FONCTIONNALITÉ ENTIÈREMENT OPÉRATIONNELLE. L'admin peut maintenant modifier le taux de commission pour chaque transaction individuellement via PUT /api/admin/transactions. Tests réussis: (1) Admin login, (2-3) Création users buyer/seller, (4) Création listing, (5) Création transaction, (6) GET /api/admin/transactions retourne liste avec pagination/filtres/stats, (7) PUT modification commission 7%→5% avec recalcul correct (100000 FCFA × 5% = 5000 FCFA commission, vendeur reçoit 95000 FCFA), (8) Commission persistée en base avec adminNotes, (9) Validation taux négatif rejetée (400), (10) Validation taux >100 rejetée (400), (11) Non-admin bloqué (403). BUGS CRITIQUES CORRIGÉS: (1) app/api/admin/transactions/route.js: Import connectDB (named→default), (2) Transaction model: netAmount→sellerReceives, (3) Admin user: phone manquant ajouté, (4) Listing: owner→ownerId, (5) Transaction status: PENDING→INITIATED, (6) Transaction model: ajout champs adminModified/adminModifiedAt/adminModifiedBy/adminNotes. API PRÊTE POUR PRODUCTION."
+  - agent: "testing"
+    message: "🎉 PAGE ADMIN GESTION DES TRANSACTIONS TESTÉE - 100% RÉUSSITE (12/12 tests). ✅ INTERFACE COMPLÈTE ET FONCTIONNELLE. Tests réussis: (1) Admin login, (2) Navigation vers /admin/transactions-management, (3) Header 'Gestion des Transactions' affiché, (4) Bannière dorée explicative visible, (5) 6 filtres de statut fonctionnels (Toutes/INITIATED/PENDING_PAYMENT/PAID/COMPLETED/CANCELLED), (6) Carte transaction avec 4 montants en grille (Montant Total: 100,000 FCFA, Taux: 5%, Commission: 5,000 FCFA doré, Vendeur: 95,000 FCFA vert), (7) Dialog modification s'ouvre correctement, (8) Slider 0-20% fonctionnel et déplaçable, (9) Calcul temps réel opérationnel (5% = 5,000 FCFA commission, 95,000 FCFA vendeur), (10) Notes admin saisies, (11) Soumission réussie avec toast de succès, (12) Badge 'Modifié par admin' affiché après modification. DESIGN: Theme dark cohérent, couleurs dorées pour commissions, badges colorés par statut, grid responsive. NAVIGATION: Lien 'Transactions' dans sidebar du dashboard opérationnel. PAGE PRÊTE POUR PRODUCTION."
 
 test_credentials:
   admin:
