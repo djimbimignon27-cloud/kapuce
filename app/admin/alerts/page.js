@@ -54,7 +54,7 @@ export default function AdminAlertsPage() {
 
   const handleAction = async (alertId, action) => {
     try {
-      const token = localStorage.getItem('adminToken');
+      const token = localStorage.getItem('adminAccessToken');
       const response = await fetch('/api/admin/alerts', {
         method: 'PUT',
         headers: {

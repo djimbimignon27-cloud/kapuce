@@ -12,7 +12,7 @@ import {
   Menu, X, Clock, Home, Settings, Bell, Search,
   ChevronRight, BarChart3, Eye, UserCheck, FileWarning,
   ArrowUpRight, ArrowDownRight, Activity, MapPin, Calendar,
-  Check, Trash2, ExternalLink, Ban, UserX, RefreshCw
+  Check, Trash2, ExternalLink, Ban, UserX, RefreshCw, MessageCircle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Toaster } from '@/components/ui/toaster';
