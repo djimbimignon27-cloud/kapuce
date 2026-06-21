@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-KAMA Marketplace Backend API Testing Suite
-Tests all critical backend endpoints for the Gabon marketplace application.
+Backend API Tests for KAPUCE.G - Messaging & Anti-Fraud System
+Tests all messaging endpoints and admin fraud management features
 """
 
 import requests
@@ -9,571 +9,900 @@ import json
 import time
 from datetime import datetime
 
-class KAMABackendTester:
-    def __init__(self):
-        self.base_url = "https://digital-marketplace-186.preview.emergentagent.com/api"
-        self.headers = {"Content-Type": "application/json"}
-        self.auth_token = None
-        self.admin_token = None
-        self.test_user_id = None
-        self.test_listing_id = None
-        self.test_results = []
+# Configuration
+BASE_URL = "https://digital-marketplace-186.preview.emergentagent.com/api"
+ADMIN_EMAIL = "superadmin@kama.com"
+ADMIN_PASSWORD = "SuperAdminPassword123!"
+
+# Test data storage
+test_data = {
+    "admin_token": None,
+    "user1_token": None,
+    "user2_token": None,
+    "user1_id": None,
+    "user2_id": None,
+    "conversation_id": None,
+    "message_ids": [],
+    "alert_ids": [],
+}
+
+def print_test_header(test_name):
+    """Print formatted test header"""
+    print(f"\n{'='*80}")
+    print(f"TEST: {test_name}")
+    print(f"{'='*80}")
+
+def print_result(success, message):
+    """Print test result"""
+    status = "✅ PASS" if success else "❌ FAIL"
+    print(f"{status}: {message}")
+
+def print_response(response):
+    """Print response details for debugging"""
+    print(f"Status: {response.status_code}")
+    try:
+        print(f"Response: {json.dumps(response.json(), indent=2)}")
+    except:
+        print(f"Response Text: {response.text[:500]}")
+
+# ============================================================================
+# AUTHENTICATION TESTS
+# ============================================================================
+
+def test_admin_login():
+    """Test admin authentication"""
+    print_test_header("Admin Login")
+    try:
+        response = requests.post(
+            f"{BASE_URL}/admin/auth/login",
+            json={
+                "email": ADMIN_EMAIL,
+                "password": ADMIN_PASSWORD
+            },
+            headers={"Content-Type": "application/json"}
+        )
         
-    def log_test(self, test_name, success, details="", critical=False):
-        """Log test results"""
-        result = {
-            "test": test_name,
-            "success": success,
-            "critical": critical,
-            "details": details,
-            "timestamp": datetime.now().isoformat()
-        }
-        self.test_results.append(result)
-        status = "✅ PASS" if success else "❌ FAIL"
-        priority = " [CRITICAL]" if critical else ""
-        print(f"{status}{priority} {test_name}: {details}")
-        
-    def test_root_endpoint(self):
-        """Test basic connectivity"""
-        try:
-            response = requests.get(f"{self.base_url}/", timeout=10)
-            if response.status_code == 200:
-                self.log_test("Root Endpoint", True, "Basic connectivity works")
+        if response.status_code == 200:
+            data = response.json()
+            if "accessToken" in data:
+                test_data["admin_token"] = data["accessToken"]
+                print_result(True, f"Admin logged in successfully. Role: {data.get('user', {}).get('role')}")
                 return True
             else:
-                self.log_test("Root Endpoint", False, f"Status: {response.status_code}", True)
+                print_result(False, "No access token in response")
+                print_response(response)
                 return False
-        except Exception as e:
-            self.log_test("Root Endpoint", False, f"Connection error: {str(e)}", True)
+        else:
+            print_result(False, f"Login failed with status {response.status_code}")
+            print_response(response)
             return False
-    
-    def test_auth_endpoints(self):
-        """Test all authentication endpoints"""
-        print("\n=== TESTING AUTHENTICATION ENDPOINTS ===")
-        
-        # Test user registration
-        register_data = {
-            "fullName": "Jean Mbang",
-            "email": "jean.mbang@kama-gabon.com",
-            "phone": "+241068234567",
-            "password": "JeanKama2024!",
-            "role": "USER"
-        }
-        
-        try:
-            response = requests.post(f"{self.base_url}/auth/register", 
-                                   json=register_data, headers=self.headers, timeout=10)
-            if response.status_code == 201:
-                self.log_test("User Registration", True, "User registered successfully")
-                data = response.json()
-                self.test_user_id = data.get('user', {}).get('id')
-                # Also capture token from registration
-                if not self.auth_token:
-                    self.auth_token = data.get('accessToken')
-                    if self.auth_token:
-                        self.headers["Authorization"] = f"Bearer {self.auth_token}"
-                print(f"Debug - User ID captured: {self.test_user_id}")
-            else:
-                self.log_test("User Registration", False, 
-                            f"Status: {response.status_code}, Response: {response.text}", True)
-        except Exception as e:
-            self.log_test("User Registration", False, f"Error: {str(e)}", True)
-        
-        # Test user login
-        login_data = {
-            "email": "jean.mbang@kama-gabon.com",
-            "password": "JeanKama2024!"
-        }
-        
-        try:
-            response = requests.post(f"{self.base_url}/auth/login", 
-                                   json=login_data, headers=self.headers, timeout=10)
-            if response.status_code == 200:
-                self.log_test("User Login", True, "Login successful")
-                data = response.json()
-                self.auth_token = data.get('accessToken')
-                if self.auth_token:
-                    self.headers["Authorization"] = f"Bearer {self.auth_token}"
-            else:
-                self.log_test("User Login", False, 
-                            f"Status: {response.status_code}, Response: {response.text}", True)
-        except Exception as e:
-            self.log_test("User Login", False, f"Error: {str(e)}", True)
-        
-        # Test admin registration and login
-        admin_data = {
-            "fullName": "Admin KAMA",
-            "email": "admin@kama-gabon.com", 
-            "phone": "+241077123456",
-            "password": "AdminKama2024!",
-            "role": "ADMIN"
-        }
-        
-        try:
-            response = requests.post(f"{self.base_url}/auth/register", 
-                                   json=admin_data, headers=self.headers, timeout=10)
-            if response.status_code == 201:
-                self.log_test("Admin Registration", True, "Admin registered successfully")
-            else:
-                self.log_test("Admin Registration", False, 
-                            f"Status: {response.status_code}, Response: {response.text}")
-        except Exception as e:
-            self.log_test("Admin Registration", False, f"Error: {str(e)}")
-        
-        # Login as admin
-        admin_login_data = {
-            "email": "admin@kama-gabon.com",
-            "password": "AdminKama2024!"
-        }
-        
-        try:
-            response = requests.post(f"{self.base_url}/auth/login", 
-                                   json=admin_login_data, headers=self.headers, timeout=10)
-            if response.status_code == 200:
-                self.log_test("Admin Login", True, "Admin login successful")
-                data = response.json()
-                self.admin_token = data.get('accessToken')
-            else:
-                self.log_test("Admin Login", False, 
-                            f"Status: {response.status_code}, Response: {response.text}")
-        except Exception as e:
-            self.log_test("Admin Login", False, f"Error: {str(e)}")
-        
-        # Test email verification (mocked)
-        if self.test_user_id:
-            try:
-                verify_data = {"token": "mock_verification_token"}
-                response = requests.post(f"{self.base_url}/auth/verify-email", 
-                                       json=verify_data, headers=self.headers, timeout=10)
-                if response.status_code == 200:
-                    self.log_test("Email Verification", True, "Email verification works (mocked)")
-                else:
-                    self.log_test("Email Verification", False, 
-                                f"Status: {response.status_code}, Response: {response.text}")
-            except Exception as e:
-                self.log_test("Email Verification", False, f"Error: {str(e)}")
-    
-    def test_listings_endpoints(self):
-        """Test all listing endpoints"""
-        print("\n=== TESTING LISTINGS ENDPOINTS ===")
-        
-        if not self.auth_token:
-            self.log_test("Listings Tests Skipped", False, "No auth token available", True)
-            return
-        
-        # Test create listing
-        listing_data = {
-            "title": "Belle Maison à Libreville Centre",
-            "description": "Magnifique maison de 4 chambres avec jardin, proche du centre-ville de Libreville. Parfait pour une famille.",
-            "price": 85000000,  # 85M FCFA
-            "type": "HOUSE",
-            "category": "SALE",
-            "city": "Libreville", 
-            "address": "Quartier Louis, Libreville",
-            "bedrooms": 4,
-            "bathrooms": 3,
-            "surface": 150
-        }
-        
-        try:
-            response = requests.post(f"{self.base_url}/listings", 
-                                   json=listing_data, headers=self.headers, timeout=10)
-            if response.status_code == 201:
-                self.log_test("Create Listing", True, "Listing created successfully", True)
-                data = response.json()
-                self.test_listing_id = data.get('listing', {}).get('_id')
-                print(f"Debug - Listing ID captured: {self.test_listing_id}")
-            else:
-                self.log_test("Create Listing", False, 
-                            f"Status: {response.status_code}, Response: {response.text}", True)
-        except Exception as e:
-            self.log_test("Create Listing", False, f"Error: {str(e)}", True)
-        
-        # Test get all listings
-        try:
-            response = requests.get(f"{self.base_url}/listings", timeout=10)
-            if response.status_code == 200:
-                listings = response.json()
-                self.log_test("Get All Listings", True, 
-                            f"Retrieved {len(listings)} listings", True)
-            else:
-                self.log_test("Get All Listings", False, 
-                            f"Status: {response.status_code}, Response: {response.text}", True)
-        except Exception as e:
-            self.log_test("Get All Listings", False, f"Error: {str(e)}", True)
-        
-        # Test get specific listing
-        if self.test_listing_id:
-            try:
-                response = requests.get(f"{self.base_url}/listings/{self.test_listing_id}", timeout=10)
-                if response.status_code == 200:
-                    self.log_test("Get Listing by ID", True, "Retrieved listing details")
-                else:
-                    self.log_test("Get Listing by ID", False, 
-                                f"Status: {response.status_code}, Response: {response.text}")
-            except Exception as e:
-                self.log_test("Get Listing by ID", False, f"Error: {str(e)}")
-        
-        # Test search listings
-        search_params = {
-            "type": "HOUSE",
-            "category": "SALE", 
-            "city": "Libreville",
-            "minPrice": 50000000,
-            "maxPrice": 100000000
-        }
-        
-        try:
-            response = requests.get(f"{self.base_url}/listings/search", 
-                                  params=search_params, timeout=10)
-            if response.status_code == 200:
-                results = response.json()
-                self.log_test("Search Listings", True, 
-                            f"Search returned {len(results)} results", True)
-            else:
-                self.log_test("Search Listings", False, 
-                            f"Status: {response.status_code}, Response: {response.text}", True)
-        except Exception as e:
-            self.log_test("Search Listings", False, f"Error: {str(e)}", True)
-    
-    def test_transactions_endpoints(self):
-        """Test transaction endpoints"""
-        print("\n=== TESTING TRANSACTIONS ENDPOINTS ===")
-        
-        if not self.auth_token or not self.test_listing_id:
-            self.log_test("Transactions Tests Skipped", False, "Missing auth token or listing ID")
-            return
-        
-        # Test create transaction
-        transaction_data = {
-            "listingId": self.test_listing_id,
-            "amount": 85000000,
-            "paymentMethod": "bank_transfer"
-        }
-        
-        try:
-            response = requests.post(f"{self.base_url}/transactions", 
-                                   json=transaction_data, headers=self.headers, timeout=10)
-            if response.status_code == 201:
-                transaction = response.json()
-                commission = transaction.get('commissionAmount', 0)
-                expected_commission = 85000000 * 0.07
-                self.log_test("Create Transaction", True, 
-                            f"Transaction created with 7% commission: {commission} FCFA")
-                # Verify commission calculation
-                if abs(commission - expected_commission) < 1:
-                    self.log_test("Commission Calculation", True, "7% commission calculated correctly")
-                else:
-                    self.log_test("Commission Calculation", False, 
-                                f"Expected: {expected_commission}, Got: {commission}")
-            else:
-                self.log_test("Create Transaction", False, 
-                            f"Status: {response.status_code}, Response: {response.text}")
-        except Exception as e:
-            self.log_test("Create Transaction", False, f"Error: {str(e)}")
-        
-        # Test get my transactions
-        try:
-            response = requests.get(f"{self.base_url}/transactions", headers=self.headers, timeout=10)
-            if response.status_code == 200:
-                transactions = response.json()
-                self.log_test("Get My Transactions", True, 
-                            f"Retrieved {len(transactions)} transactions")
-            else:
-                self.log_test("Get My Transactions", False, 
-                            f"Status: {response.status_code}, Response: {response.text}")
-        except Exception as e:
-            self.log_test("Get My Transactions", False, f"Error: {str(e)}")
-    
-    def test_reviews_endpoints(self):
-        """Test review endpoints"""
-        print("\n=== TESTING REVIEWS ENDPOINTS ===")
-        
-        if not self.auth_token or not self.test_user_id:
-            self.log_test("Reviews Tests Skipped", False, "Missing auth token or user ID")
-            return
-        
-        # Test create review
-        review_data = {
-            "userId": self.test_user_id,
-            "rating": 5,
-            "comment": "Excellent vendeur, très professionnel et réactif!"
-        }
-        
-        try:
-            response = requests.post(f"{self.base_url}/reviews", 
-                                   json=review_data, headers=self.headers, timeout=10)
-            if response.status_code == 201:
-                self.log_test("Create Review", True, "Review created successfully")
-            else:
-                self.log_test("Create Review", False, 
-                            f"Status: {response.status_code}, Response: {response.text}")
-        except Exception as e:
-            self.log_test("Create Review", False, f"Error: {str(e)}")
-        
-        # Test get reviews for user
-        try:
-            response = requests.get(f"{self.base_url}/reviews?userId={self.test_user_id}", timeout=10)
-            if response.status_code == 200:
-                reviews = response.json()
-                self.log_test("Get User Reviews", True, 
-                            f"Retrieved {len(reviews)} reviews")
-            else:
-                self.log_test("Get User Reviews", False, 
-                            f"Status: {response.status_code}, Response: {response.text}")
-        except Exception as e:
-            self.log_test("Get User Reviews", False, f"Error: {str(e)}")
-    
-    def test_favorites_endpoints(self):
-        """Test favorites endpoints"""
-        print("\n=== TESTING FAVORITES ENDPOINTS ===")
-        
-        if not self.auth_token or not self.test_listing_id:
-            self.log_test("Favorites Tests Skipped", False, "Missing auth token or listing ID")
-            return
-        
-        # Test add to favorites
-        favorite_data = {"listingId": self.test_listing_id}
-        
-        try:
-            response = requests.post(f"{self.base_url}/favorites", 
-                                   json=favorite_data, headers=self.headers, timeout=10)
-            if response.status_code == 201:
-                self.log_test("Add to Favorites", True, "Added to favorites successfully")
-            else:
-                self.log_test("Add to Favorites", False, 
-                            f"Status: {response.status_code}, Response: {response.text}")
-        except Exception as e:
-            self.log_test("Add to Favorites", False, f"Error: {str(e)}")
-        
-        # Test get my favorites
-        try:
-            response = requests.get(f"{self.base_url}/favorites", headers=self.headers, timeout=10)
-            if response.status_code == 200:
-                favorites = response.json()
-                self.log_test("Get My Favorites", True, 
-                            f"Retrieved {len(favorites)} favorites")
-            else:
-                self.log_test("Get My Favorites", False, 
-                            f"Status: {response.status_code}, Response: {response.text}")
-        except Exception as e:
-            self.log_test("Get My Favorites", False, f"Error: {str(e)}")
-    
-    def test_admin_endpoints(self):
-        """Test admin endpoints"""
-        print("\n=== TESTING ADMIN ENDPOINTS ===")
-        
-        if not self.admin_token:
-            self.log_test("Admin Tests Skipped", False, "No admin token available")
-            return
-        
-        admin_headers = {"Content-Type": "application/json", 
-                        "Authorization": f"Bearer {self.admin_token}"}
-        
-        # Test admin dashboard
-        try:
-            response = requests.get(f"{self.base_url}/admin/dashboard", 
-                                  headers=admin_headers, timeout=10)
-            if response.status_code == 200:
-                stats = response.json()
-                self.log_test("Admin Dashboard", True, "Dashboard data retrieved successfully")
-            else:
-                self.log_test("Admin Dashboard", False, 
-                            f"Status: {response.status_code}, Response: {response.text}")
-        except Exception as e:
-            self.log_test("Admin Dashboard", False, f"Error: {str(e)}")
-        
-        # Test approve listing (if we have a listing)
-        if self.test_listing_id:
-            try:
-                approve_data = {"status": "ACTIVE"}
-                response = requests.put(f"{self.base_url}/admin/listings/{self.test_listing_id}", 
-                                      json=approve_data, headers=admin_headers, timeout=10)
-                if response.status_code == 200:
-                    self.log_test("Approve Listing", True, "Listing approved successfully")
-                else:
-                    self.log_test("Approve Listing", False, 
-                                f"Status: {response.status_code}, Response: {response.text}")
-            except Exception as e:
-                self.log_test("Approve Listing", False, f"Error: {str(e)}")
-    
-    def test_cloudinary_upload(self):
-        """Test Cloudinary file upload API"""
-        print("\n📤 Testing Cloudinary Upload API...")
-        
-        # Test image: 1x1 pixel red PNG in base64
-        test_image_base64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
-        
-        # Test 1: Upload without authentication - should fail with 401
-        try:
-            upload_url = f"https://digital-marketplace-186.preview.emergentagent.com/api/upload"
-            payload = {
-                "file": test_image_base64,
-                "type": "image"
-            }
-            
-            response = requests.post(upload_url, json=payload, timeout=30)
-            if response.status_code == 401:
-                self.log_test("Upload - No Auth", True, "Correctly rejected unauthorized upload")
-            else:
-                self.log_test("Upload - No Auth", False, f"Expected 401, got {response.status_code}")
-                
-        except Exception as e:
-            self.log_test("Upload - No Auth", False, f"Request error: {str(e)}")
-        
-        # Test 2: Login to get auth token for authenticated tests
-        login_success = False
-        try:
-            login_url = f"https://digital-marketplace-186.preview.emergentagent.com/api/auth/login"
-            login_payload = {
-                "email": "superadmin@kama.com",
-                "password": "SuperAdminPassword123!"
-            }
-            
-            response = requests.post(login_url, json=login_payload, timeout=30)
-            if response.status_code == 200:
-                data = response.json()
-                auth_token = data.get('accessToken')
-                if auth_token:
-                    self.log_test("Upload - Auth Login", True, "Successfully obtained auth token")
-                    login_success = True
-                else:
-                    self.log_test("Upload - Auth Login", False, "No access token in response")
-            else:
-                self.log_test("Upload - Auth Login", False, f"Login failed: {response.status_code}")
-                
-        except Exception as e:
-            self.log_test("Upload - Auth Login", False, f"Login error: {str(e)}")
-        
-        if not login_success:
-            self.log_test("Upload Tests", False, "Cannot proceed without authentication", True)
-            return
-        
-        # Test 3: Upload without file - should fail with 400
-        try:
-            headers = {
-                'Authorization': f'Bearer {auth_token}',
-                'Content-Type': 'application/json'
-            }
-            payload = {"type": "image"}  # Missing file field
-            
-            response = requests.post(upload_url, json=payload, headers=headers, timeout=30)
-            if response.status_code == 400:
-                self.log_test("Upload - No File", True, "Correctly rejected upload without file")
-            else:
-                self.log_test("Upload - No File", False, f"Expected 400, got {response.status_code}")
-                
-        except Exception as e:
-            self.log_test("Upload - No File", False, f"Request error: {str(e)}")
-        
-        # Test 4: Valid file upload with authentication
-        try:
-            headers = {
-                'Authorization': f'Bearer {auth_token}',
-                'Content-Type': 'application/json'
-            }
-            payload = {
-                "file": test_image_base64,
-                "type": "image",
-                "folder": "kama/listings"
-            }
-            
-            response = requests.post(upload_url, json=payload, headers=headers, timeout=30)
-            if response.status_code == 200:
-                data = response.json()
-                if data.get('success') and 'file' in data:
-                    file_data = data['file']
-                    if 'url' in file_data and 'publicId' in file_data:
-                        self.log_test("Upload - Valid File", True, f"File uploaded successfully: {file_data['publicId']}", True)
-                    else:
-                        self.log_test("Upload - Valid File", False, "Missing url or publicId in response", True)
-                else:
-                    self.log_test("Upload - Valid File", False, "Invalid response structure", True)
-            else:
-                self.log_test("Upload - Valid File", False, f"Upload failed: {response.status_code} - {response.text}", True)
-                
-        except Exception as e:
-            self.log_test("Upload - Valid File", False, f"Upload error: {str(e)}", True)
-        
-        # Test 5: Different file types
-        file_types = ["image", "document", "video"]
-        for file_type in file_types:
-            try:
-                headers = {
-                    'Authorization': f'Bearer {auth_token}',
-                    'Content-Type': 'application/json'
-                }
-                payload = {
-                    "file": test_image_base64,
-                    "type": file_type
-                }
-                
-                response = requests.post(upload_url, json=payload, headers=headers, timeout=30)
-                if response.status_code == 200:
-                    data = response.json()
-                    if data.get('success'):
-                        self.log_test(f"Upload - {file_type.title()}", True, f"{file_type} upload successful")
-                    else:
-                        self.log_test(f"Upload - {file_type.title()}", False, f"{file_type} upload failed - response error")
-                else:
-                    self.log_test(f"Upload - {file_type.title()}", False, f"{file_type} upload failed: {response.status_code}")
-                    
-            except Exception as e:
-                self.log_test(f"Upload - {file_type.title()}", False, f"{file_type} upload error: {str(e)}")
+    except Exception as e:
+        print_result(False, f"Exception: {str(e)}")
+        return False
 
-    def run_all_tests(self):
-        """Run all backend tests"""
-        print("🚀 Starting KAMA Marketplace Backend API Tests...")
-        print(f"Testing against: {self.base_url}")
-        print("=" * 60)
+def test_create_user(user_num):
+    """Create a test user for messaging"""
+    print_test_header(f"Create User {user_num}")
+    try:
+        timestamp = int(time.time())
+        email = f"testuser{user_num}_{timestamp}@kapuce.test"
         
-        # Test basic connectivity first
-        if not self.test_root_endpoint():
-            print("\n❌ CRITICAL: Cannot connect to backend - stopping tests")
+        response = requests.post(
+            f"{BASE_URL}/auth/register",
+            json={
+                "email": email,
+                "password": "TestPassword123!",
+                "fullName": f"Test User {user_num}",
+                "phone": f"07712345{user_num}",
+                "role": "USER"
+            },
+            headers={"Content-Type": "application/json"}
+        )
+        
+        if response.status_code == 201:
+            data = response.json()
+            if "accessToken" in data:
+                test_data[f"user{user_num}_token"] = data["accessToken"]
+                # Handle both 'id' and '_id' field names
+                user_id = data["user"].get("_id") or data["user"].get("id")
+                test_data[f"user{user_num}_id"] = user_id
+                print_result(True, f"User {user_num} created: {email}, ID: {user_id}")
+                return True
+            else:
+                print_result(False, "No access token in response")
+                print_response(response)
+                return False
+        else:
+            print_result(False, f"Registration failed with status {response.status_code}")
+            print_response(response)
+            return False
+    except Exception as e:
+        print_result(False, f"Exception: {str(e)}")
+        return False
+
+# ============================================================================
+# MESSAGING TESTS
+# ============================================================================
+
+def test_create_conversation():
+    """Test creating a conversation between two users"""
+    print_test_header("Create Conversation")
+    try:
+        response = requests.post(
+            f"{BASE_URL}/messages/conversations",
+            json={
+                "receiverId": test_data["user2_id"],
+                "listingTitle": "Test Property Listing"
+            },
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {test_data['user1_token']}"
+            }
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("success") and "conversation" in data:
+                test_data["conversation_id"] = data["conversation"]["_id"]
+                print_result(True, f"Conversation created: {test_data['conversation_id']}")
+                print(f"Participants: {data['conversation'].get('participants')}")
+                return True
+            else:
+                print_result(False, "Invalid response structure")
+                print_response(response)
+                return False
+        else:
+            print_result(False, f"Failed with status {response.status_code}")
+            print_response(response)
+            return False
+    except Exception as e:
+        print_result(False, f"Exception: {str(e)}")
+        return False
+
+def test_get_conversations():
+    """Test getting user's conversations"""
+    print_test_header("Get User Conversations")
+    try:
+        response = requests.get(
+            f"{BASE_URL}/messages/conversations",
+            headers={
+                "Authorization": f"Bearer {test_data['user1_token']}"
+            }
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("success") and "conversations" in data:
+                conv_count = len(data["conversations"])
+                print_result(True, f"Retrieved {conv_count} conversation(s)")
+                if conv_count > 0:
+                    conv = data["conversations"][0]
+                    print(f"First conversation: {conv.get('_id')}")
+                    print(f"Other participant: {conv.get('otherParticipant', {}).get('fullName')}")
+                    print(f"Unread count: {conv.get('unreadCount', 0)}")
+                return True
+            else:
+                print_result(False, "Invalid response structure")
+                print_response(response)
+                return False
+        else:
+            print_result(False, f"Failed with status {response.status_code}")
+            print_response(response)
+            return False
+    except Exception as e:
+        print_result(False, f"Exception: {str(e)}")
+        return False
+
+def test_send_normal_message():
+    """Test sending a normal message"""
+    print_test_header("Send Normal Message")
+    try:
+        response = requests.post(
+            f"{BASE_URL}/messages",
+            json={
+                "conversationId": test_data["conversation_id"],
+                "content": "Bonjour, je suis très intéressé par cette propriété. Pouvez-vous me donner plus d'informations?"
+            },
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {test_data['user1_token']}"
+            }
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("success") and "message" in data:
+                test_data["message_ids"].append(data["message"]["_id"])
+                is_filtered = data.get("isFiltered", False)
+                warning = data.get("warning")
+                print_result(True, f"Message sent successfully. Filtered: {is_filtered}")
+                if warning:
+                    print(f"Warning: {warning}")
+                return True
+            else:
+                print_result(False, "Invalid response structure")
+                print_response(response)
+                return False
+        else:
+            print_result(False, f"Failed with status {response.status_code}")
+            print_response(response)
+            return False
+    except Exception as e:
+        print_result(False, f"Exception: {str(e)}")
+        return False
+
+def test_send_message_with_phone():
+    """Test sending message with phone number (should trigger fraud alert)"""
+    print_test_header("Send Message with Phone Number (Anti-Fraud Test)")
+    try:
+        response = requests.post(
+            f"{BASE_URL}/messages",
+            json={
+                "conversationId": test_data["conversation_id"],
+                "content": "Appelez-moi directement au 077 12 34 56 pour discuter"
+            },
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {test_data['user1_token']}"
+            }
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("success"):
+                is_filtered = data.get("isFiltered", False)
+                warning = data.get("warning")
+                message_content = data.get("message", {}).get("content", "")
+                
+                if is_filtered and "[NUMÉRO MASQUÉ]" in message_content:
+                    print_result(True, "Phone number detected and filtered correctly")
+                    print(f"Filtered content: {message_content}")
+                    print(f"Warning: {warning}")
+                    return True
+                else:
+                    print_result(False, f"Phone number NOT filtered. Filtered: {is_filtered}, Content: {message_content}")
+                    return False
+            else:
+                print_result(False, "Message sending failed")
+                print_response(response)
+                return False
+        else:
+            print_result(False, f"Failed with status {response.status_code}")
+            print_response(response)
+            return False
+    except Exception as e:
+        print_result(False, f"Exception: {str(e)}")
+        return False
+
+def test_send_message_with_email():
+    """Test sending message with email (should trigger fraud alert)"""
+    print_test_header("Send Message with Email (Anti-Fraud Test)")
+    try:
+        response = requests.post(
+            f"{BASE_URL}/messages",
+            json={
+                "conversationId": test_data["conversation_id"],
+                "content": "Contactez-moi sur mon email personnel: contact@example.com"
+            },
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {test_data['user1_token']}"
+            }
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("success"):
+                is_filtered = data.get("isFiltered", False)
+                message_content = data.get("message", {}).get("content", "")
+                
+                if is_filtered and "[EMAIL MASQUÉ]" in message_content:
+                    print_result(True, "Email detected and filtered correctly")
+                    print(f"Filtered content: {message_content}")
+                    return True
+                else:
+                    print_result(False, f"Email NOT filtered. Filtered: {is_filtered}")
+                    return False
+            else:
+                print_result(False, "Message sending failed")
+                print_response(response)
+                return False
+        else:
+            print_result(False, f"Failed with status {response.status_code}")
+            print_response(response)
+            return False
+    except Exception as e:
+        print_result(False, f"Exception: {str(e)}")
+        return False
+
+def test_send_message_with_whatsapp():
+    """Test sending message with WhatsApp mention (should trigger fraud alert)"""
+    print_test_header("Send Message with WhatsApp (Anti-Fraud Test)")
+    try:
+        response = requests.post(
+            f"{BASE_URL}/messages",
+            json={
+                "conversationId": test_data["conversation_id"],
+                "content": "Ajoutez-moi sur WhatsApp pour continuer la discussion"
+            },
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {test_data['user1_token']}"
+            }
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("success"):
+                is_filtered = data.get("isFiltered", False)
+                warning = data.get("warning")
+                
+                if is_filtered:
+                    print_result(True, "WhatsApp mention detected and flagged")
+                    print(f"Warning: {warning}")
+                    return True
+                else:
+                    print_result(False, "WhatsApp mention NOT detected")
+                    return False
+            else:
+                print_result(False, "Message sending failed")
+                print_response(response)
+                return False
+        else:
+            print_result(False, f"Failed with status {response.status_code}")
+            print_response(response)
+            return False
+    except Exception as e:
+        print_result(False, f"Exception: {str(e)}")
+        return False
+
+def test_send_message_with_external_payment():
+    """Test sending message with external payment mention (CRITICAL - should trigger fraud alert)"""
+    print_test_header("Send Message with External Payment (Anti-Fraud CRITICAL Test)")
+    try:
+        response = requests.post(
+            f"{BASE_URL}/messages",
+            json={
+                "conversationId": test_data["conversation_id"],
+                "content": "On peut faire le paiement directement en Airtel Money, c'est plus simple"
+            },
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {test_data['user1_token']}"
+            }
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("success"):
+                is_filtered = data.get("isFiltered", False)
+                warning = data.get("warning")
+                
+                if is_filtered:
+                    print_result(True, "External payment detected and flagged as CRITICAL")
+                    print(f"Warning: {warning}")
+                    return True
+                else:
+                    print_result(False, "External payment mention NOT detected")
+                    return False
+            else:
+                print_result(False, "Message sending failed")
+                print_response(response)
+                return False
+        else:
+            print_result(False, f"Failed with status {response.status_code}")
+            print_response(response)
+            return False
+    except Exception as e:
+        print_result(False, f"Exception: {str(e)}")
+        return False
+
+def test_get_messages():
+    """Test retrieving messages from a conversation"""
+    print_test_header("Get Messages from Conversation")
+    try:
+        response = requests.get(
+            f"{BASE_URL}/messages?conversationId={test_data['conversation_id']}",
+            headers={
+                "Authorization": f"Bearer {test_data['user1_token']}"
+            }
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("success") and "messages" in data:
+                msg_count = len(data["messages"])
+                print_result(True, f"Retrieved {msg_count} message(s)")
+                
+                # Check for filtered messages
+                filtered_count = sum(1 for msg in data["messages"] if msg.get("isFiltered"))
+                print(f"Filtered messages: {filtered_count}/{msg_count}")
+                
+                return True
+            else:
+                print_result(False, "Invalid response structure")
+                print_response(response)
+                return False
+        else:
+            print_result(False, f"Failed with status {response.status_code}")
+            print_response(response)
+            return False
+    except Exception as e:
+        print_result(False, f"Exception: {str(e)}")
+        return False
+
+# ============================================================================
+# ADMIN - FRAUD ALERTS TESTS
+# ============================================================================
+
+def test_admin_get_alerts():
+    """Test admin getting fraud alerts"""
+    print_test_header("Admin - Get Fraud Alerts")
+    try:
+        response = requests.get(
+            f"{BASE_URL}/admin/alerts?status=PENDING",
+            headers={
+                "Authorization": f"Bearer {test_data['admin_token']}"
+            }
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("success") and "alerts" in data:
+                alert_count = len(data["alerts"])
+                stats = data.get("stats", {})
+                print_result(True, f"Retrieved {alert_count} alert(s)")
+                print(f"Stats: {stats}")
+                
+                # Store alert IDs for later tests
+                if alert_count > 0:
+                    test_data["alert_ids"] = [alert["_id"] for alert in data["alerts"]]
+                    print(f"First alert type: {data['alerts'][0].get('type')}")
+                    print(f"First alert severity: {data['alerts'][0].get('severity')}")
+                    print(f"User: {data['alerts'][0].get('user', {}).get('fullName')}")
+                
+                return True
+            else:
+                print_result(False, "Invalid response structure")
+                print_response(response)
+                return False
+        else:
+            print_result(False, f"Failed with status {response.status_code}")
+            print_response(response)
+            return False
+    except Exception as e:
+        print_result(False, f"Exception: {str(e)}")
+        return False
+
+def test_admin_review_alert():
+    """Test admin reviewing an alert"""
+    print_test_header("Admin - Review Alert")
+    try:
+        if not test_data["alert_ids"]:
+            print_result(False, "No alerts available to review")
             return False
         
-        # Run all test suites
-        self.test_auth_endpoints()
-        self.test_listings_endpoints()
-        self.test_transactions_endpoints()  
-        self.test_reviews_endpoints()
-        self.test_favorites_endpoints()
-        self.test_admin_endpoints()
-        self.test_cloudinary_upload()  # Added Cloudinary upload tests
+        alert_id = test_data["alert_ids"][0]
         
-        # Print summary
-        self.print_summary()
-        return True
+        response = requests.put(
+            f"{BASE_URL}/admin/alerts",
+            json={
+                "alertId": alert_id,
+                "action": "review",
+                "adminNotes": "Alert reviewed - monitoring user activity"
+            },
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {test_data['admin_token']}"
+            }
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("success"):
+                print_result(True, "Alert reviewed successfully")
+                return True
+            else:
+                print_result(False, "Review failed")
+                print_response(response)
+                return False
+        else:
+            print_result(False, f"Failed with status {response.status_code}")
+            print_response(response)
+            return False
+    except Exception as e:
+        print_result(False, f"Exception: {str(e)}")
+        return False
+
+def test_admin_dismiss_alert():
+    """Test admin dismissing an alert"""
+    print_test_header("Admin - Dismiss Alert")
+    try:
+        if len(test_data["alert_ids"]) < 2:
+            print_result(False, "Not enough alerts to test dismiss")
+            return False
+        
+        alert_id = test_data["alert_ids"][1]
+        
+        response = requests.put(
+            f"{BASE_URL}/admin/alerts",
+            json={
+                "alertId": alert_id,
+                "action": "dismiss",
+                "adminNotes": "False positive - legitimate message"
+            },
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {test_data['admin_token']}"
+            }
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("success"):
+                print_result(True, "Alert dismissed successfully")
+                return True
+            else:
+                print_result(False, "Dismiss failed")
+                print_response(response)
+                return False
+        else:
+            print_result(False, f"Failed with status {response.status_code}")
+            print_response(response)
+            return False
+    except Exception as e:
+        print_result(False, f"Exception: {str(e)}")
+        return False
+
+# ============================================================================
+# ADMIN - MESSAGE SUPERVISION TESTS
+# ============================================================================
+
+def test_admin_get_all_conversations():
+    """Test admin getting all conversations"""
+    print_test_header("Admin - Get All Conversations")
+    try:
+        response = requests.get(
+            f"{BASE_URL}/admin/messages?filter=ALL",
+            headers={
+                "Authorization": f"Bearer {test_data['admin_token']}"
+            }
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("success") and "conversations" in data:
+                conv_count = len(data["conversations"])
+                stats = data.get("stats", {})
+                print_result(True, f"Retrieved {conv_count} conversation(s)")
+                print(f"Stats: Total messages: {stats.get('totalMessages')}, Filtered: {stats.get('filteredMessages')}")
+                return True
+            else:
+                print_result(False, "Invalid response structure")
+                print_response(response)
+                return False
+        else:
+            print_result(False, f"Failed with status {response.status_code}")
+            print_response(response)
+            return False
+    except Exception as e:
+        print_result(False, f"Exception: {str(e)}")
+        return False
+
+def test_admin_get_flagged_conversations():
+    """Test admin getting flagged conversations"""
+    print_test_header("Admin - Get Flagged Conversations")
+    try:
+        response = requests.get(
+            f"{BASE_URL}/admin/messages?filter=FLAGGED",
+            headers={
+                "Authorization": f"Bearer {test_data['admin_token']}"
+            }
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("success") and "conversations" in data:
+                conv_count = len(data["conversations"])
+                print_result(True, f"Retrieved {conv_count} flagged conversation(s)")
+                
+                if conv_count > 0:
+                    conv = data["conversations"][0]
+                    print(f"Filtered messages count: {conv.get('filteredMessagesCount')}")
+                
+                return True
+            else:
+                print_result(False, "Invalid response structure")
+                print_response(response)
+                return False
+        else:
+            print_result(False, f"Failed with status {response.status_code}")
+            print_response(response)
+            return False
+    except Exception as e:
+        print_result(False, f"Exception: {str(e)}")
+        return False
+
+def test_admin_get_conversation_messages():
+    """Test admin viewing messages of a specific conversation"""
+    print_test_header("Admin - Get Conversation Messages")
+    try:
+        if not test_data["conversation_id"]:
+            print_result(False, "No conversation ID available")
+            return False
+        
+        response = requests.get(
+            f"{BASE_URL}/admin/messages/{test_data['conversation_id']}",
+            headers={
+                "Authorization": f"Bearer {test_data['admin_token']}"
+            }
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("success") and "messages" in data:
+                msg_count = len(data["messages"])
+                print_result(True, f"Retrieved {msg_count} message(s)")
+                
+                # Check if admin can see both filtered and original content
+                filtered_msgs = [msg for msg in data["messages"] if msg.get("isFiltered")]
+                if filtered_msgs:
+                    print(f"Filtered messages: {len(filtered_msgs)}")
+                    print(f"Example - Original: {filtered_msgs[0].get('originalContent', 'N/A')[:50]}")
+                    print(f"Example - Filtered: {filtered_msgs[0].get('content', 'N/A')[:50]}")
+                
+                return True
+            else:
+                print_result(False, "Invalid response structure")
+                print_response(response)
+                return False
+        else:
+            print_result(False, f"Failed with status {response.status_code}")
+            print_response(response)
+            return False
+    except Exception as e:
+        print_result(False, f"Exception: {str(e)}")
+        return False
+
+# ============================================================================
+# ADMIN - USER MANAGEMENT TESTS
+# ============================================================================
+
+def test_admin_block_user():
+    """Test admin blocking a user"""
+    print_test_header("Admin - Block User")
+    try:
+        response = requests.put(
+            f"{BASE_URL}/admin/users",
+            json={
+                "userId": test_data["user1_id"],
+                "action": "block",
+                "reason": "Multiple fraud attempts detected"
+            },
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {test_data['admin_token']}"
+            }
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("success"):
+                print_result(True, f"User blocked: {data.get('message')}")
+                return True
+            else:
+                print_result(False, "Block failed")
+                print_response(response)
+                return False
+        else:
+            print_result(False, f"Failed with status {response.status_code}")
+            print_response(response)
+            return False
+    except Exception as e:
+        print_result(False, f"Exception: {str(e)}")
+        return False
+
+def test_blocked_user_cannot_send_message():
+    """Test that blocked user cannot send messages"""
+    print_test_header("Blocked User Cannot Send Message")
+    try:
+        response = requests.post(
+            f"{BASE_URL}/messages",
+            json={
+                "conversationId": test_data["conversation_id"],
+                "content": "Test message from blocked user"
+            },
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {test_data['user1_token']}"
+            }
+        )
+        
+        if response.status_code == 403:
+            data = response.json()
+            error_msg = data.get("error", "")
+            if "bloqué" in error_msg.lower() or "blocked" in error_msg.lower():
+                print_result(True, f"Blocked user correctly prevented from sending: {error_msg}")
+                return True
+            else:
+                print_result(False, f"Wrong error message: {error_msg}")
+                return False
+        else:
+            print_result(False, f"Expected 403, got {response.status_code}")
+            print_response(response)
+            return False
+    except Exception as e:
+        print_result(False, f"Exception: {str(e)}")
+        return False
+
+def test_admin_unblock_user():
+    """Test admin unblocking a user"""
+    print_test_header("Admin - Unblock User")
+    try:
+        response = requests.put(
+            f"{BASE_URL}/admin/users",
+            json={
+                "userId": test_data["user1_id"],
+                "action": "unblock"
+            },
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {test_data['admin_token']}"
+            }
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("success"):
+                print_result(True, f"User unblocked: {data.get('message')}")
+                return True
+            else:
+                print_result(False, "Unblock failed")
+                print_response(response)
+                return False
+        else:
+            print_result(False, f"Failed with status {response.status_code}")
+            print_response(response)
+            return False
+    except Exception as e:
+        print_result(False, f"Exception: {str(e)}")
+        return False
+
+def test_unblocked_user_can_send_message():
+    """Test that unblocked user can send messages again"""
+    print_test_header("Unblocked User Can Send Message")
+    try:
+        response = requests.post(
+            f"{BASE_URL}/messages",
+            json={
+                "conversationId": test_data["conversation_id"],
+                "content": "Message après déblocage - tout est en ordre maintenant"
+            },
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {test_data['user1_token']}"
+            }
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("success"):
+                print_result(True, "Unblocked user can send messages again")
+                return True
+            else:
+                print_result(False, "Message sending failed")
+                print_response(response)
+                return False
+        else:
+            print_result(False, f"Failed with status {response.status_code}")
+            print_response(response)
+            return False
+    except Exception as e:
+        print_result(False, f"Exception: {str(e)}")
+        return False
+
+# ============================================================================
+# ADMIN - DASHBOARD STATS TEST
+# ============================================================================
+
+def test_admin_dashboard_stats():
+    """Test admin dashboard stats include fraud alerts"""
+    print_test_header("Admin - Dashboard Stats with Fraud Alerts")
+    try:
+        response = requests.get(
+            f"{BASE_URL}/admin/dashboard-stats",
+            headers={
+                "Authorization": f"Bearer {test_data['admin_token']}"
+            }
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            if "fraudAlerts" in data:
+                fraud_alerts = data["fraudAlerts"]
+                print_result(True, f"Dashboard stats include fraud alerts")
+                print(f"Pending alerts: {fraud_alerts.get('pending')}")
+                print(f"Total alerts: {fraud_alerts.get('total')}")
+                return True
+            else:
+                print_result(False, "fraudAlerts field missing from dashboard stats")
+                print_response(response)
+                return False
+        else:
+            print_result(False, f"Failed with status {response.status_code}")
+            print_response(response)
+            return False
+    except Exception as e:
+        print_result(False, f"Exception: {str(e)}")
+        return False
+
+# ============================================================================
+# MAIN TEST RUNNER
+# ============================================================================
+
+def run_all_tests():
+    """Run all backend tests"""
+    print("\n" + "="*80)
+    print("KAPUCE.G - BACKEND TESTING - MESSAGING & ANTI-FRAUD SYSTEM")
+    print("="*80)
+    print(f"Base URL: {BASE_URL}")
+    print(f"Start Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print("="*80)
     
-    def print_summary(self):
-        """Print test results summary"""
-        print("\n" + "=" * 60)
-        print("📊 TEST RESULTS SUMMARY")
-        print("=" * 60)
-        
-        total_tests = len(self.test_results)
-        passed_tests = len([t for t in self.test_results if t['success']])
-        critical_failures = [t for t in self.test_results if not t['success'] and t['critical']]
-        
-        print(f"Total Tests: {total_tests}")
-        print(f"Passed: {passed_tests}")
-        print(f"Failed: {total_tests - passed_tests}")
-        print(f"Critical Failures: {len(critical_failures)}")
-        
-        if critical_failures:
-            print("\n🚨 CRITICAL FAILURES:")
-            for failure in critical_failures:
-                print(f"  • {failure['test']}: {failure['details']}")
-        
-        print(f"\nSuccess Rate: {(passed_tests/total_tests)*100:.1f}%")
-        
-        # Save detailed results
-        with open('/app/test_reports/backend_test_results.json', 'w') as f:
-            json.dump(self.test_results, f, indent=2)
-        
-        print(f"Detailed results saved to: /app/test_reports/backend_test_results.json")
+    results = {}
+    
+    # Authentication
+    results["Admin Login"] = test_admin_login()
+    results["Create User 1"] = test_create_user(1)
+    results["Create User 2"] = test_create_user(2)
+    
+    # Messaging
+    results["Create Conversation"] = test_create_conversation()
+    results["Get Conversations"] = test_get_conversations()
+    results["Send Normal Message"] = test_send_normal_message()
+    results["Send Message with Phone"] = test_send_message_with_phone()
+    results["Send Message with Email"] = test_send_message_with_email()
+    results["Send Message with WhatsApp"] = test_send_message_with_whatsapp()
+    results["Send Message with External Payment"] = test_send_message_with_external_payment()
+    results["Get Messages"] = test_get_messages()
+    
+    # Admin - Fraud Alerts
+    results["Admin Get Alerts"] = test_admin_get_alerts()
+    results["Admin Review Alert"] = test_admin_review_alert()
+    results["Admin Dismiss Alert"] = test_admin_dismiss_alert()
+    
+    # Admin - Message Supervision
+    results["Admin Get All Conversations"] = test_admin_get_all_conversations()
+    results["Admin Get Flagged Conversations"] = test_admin_get_flagged_conversations()
+    results["Admin Get Conversation Messages"] = test_admin_get_conversation_messages()
+    
+    # Admin - User Management
+    results["Admin Block User"] = test_admin_block_user()
+    results["Blocked User Cannot Send"] = test_blocked_user_cannot_send_message()
+    results["Admin Unblock User"] = test_admin_unblock_user()
+    results["Unblocked User Can Send"] = test_unblocked_user_can_send_message()
+    
+    # Admin - Dashboard Stats
+    results["Admin Dashboard Stats"] = test_admin_dashboard_stats()
+    
+    # Summary
+    print("\n" + "="*80)
+    print("TEST SUMMARY")
+    print("="*80)
+    
+    passed = sum(1 for v in results.values() if v)
+    total = len(results)
+    
+    for test_name, result in results.items():
+        status = "✅ PASS" if result else "❌ FAIL"
+        print(f"{status}: {test_name}")
+    
+    print("="*80)
+    print(f"TOTAL: {passed}/{total} tests passed ({(passed/total*100):.1f}%)")
+    print(f"End Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print("="*80)
+    
+    return results
 
 if __name__ == "__main__":
-    tester = KAMABackendTester()
-    success = tester.run_all_tests()
-    exit(0 if success else 1)
+    run_all_tests()

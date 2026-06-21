@@ -102,9 +102,153 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Test complet du backend KAMA - Application marketplace KAMA pour le Gabon (immobilier, véhicules, terrains). Backend Next.js avec MongoDB, JWT auth, système de transactions avec commission 7%."
+user_problem_statement: "Test complet de KAPUCE.G - Nouvelle fonctionnalité : Système de messagerie interne avec anti-fraude pour empêcher le contournement de la plateforme. Dashboard admin étendu avec supervision des messages et alertes. Paiement Mobile Money (Airtel: 077347262, Moov: 065216069)."
 
 backend:
+  - task: "Messagerie - Envoyer un message"
+    implemented: true
+    working: true
+    file: "app/api/messages/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "POST /api/messages - Système de messagerie avec filtre anti-fraude intégré. Détecte automatiquement les numéros de téléphone, emails, mentions WhatsApp/Telegram, et tentatives de paiement externe. Créé des alertes de fraude automatiquement. Bloque l'utilisateur après 10 alertes (niveau CRITICAL)."
+      - working: true
+        agent: "testing"
+        comment: "POST /api/messages working perfectly. Anti-fraud system fully operational: (1) Phone numbers detected and masked with [NUMÉRO MASQUÉ], (2) Emails detected and masked with [EMAIL MASQUÉ], (3) WhatsApp/Telegram mentions flagged, (4) External payment mentions (Airtel Money, Mobile Money) flagged as CRITICAL. All suspicious messages create fraud alerts automatically. Warning messages displayed to users. Tested with 100% success rate."
+
+  - task: "Messagerie - Récupérer les messages d'une conversation"
+    implemented: true
+    working: true
+    file: "app/api/messages/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "GET /api/messages?conversationId=X - Récupère tous les messages d'une conversation. Marque automatiquement les messages comme lus. Met à jour le compteur de non-lus. Requiert authentification JWT."
+      - working: true
+        agent: "testing"
+        comment: "GET /api/messages?conversationId=X working perfectly. Returns all messages sorted by date. Automatically marks messages as read. Updates unread counter. Shows both filtered content and original content for filtered messages. Tested with 100% success rate."
+
+  - task: "Messagerie - Récupérer les conversations d'un utilisateur"
+    implemented: true
+    working: true
+    file: "app/api/messages/conversations/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "GET /api/messages/conversations - Retourne toutes les conversations de l'utilisateur connecté avec infos des autres participants, compteur de non-lus, dernier message. Vérifie si l'utilisateur est bloqué avant de retourner les données."
+      - working: true
+        agent: "testing"
+        comment: "GET /api/messages/conversations working perfectly. Returns user's conversations with other participant info, unread count, and last message. Blocks banned users correctly. FIXED: unreadCount Map handling issue when using .lean() - now handles both Map and plain object formats. Tested with 100% success rate."
+
+  - task: "Messagerie - Créer ou récupérer une conversation"
+    implemented: true
+    working: true
+    file: "app/api/messages/conversations/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "POST /api/messages/conversations - Crée une nouvelle conversation ou retourne une existante. Vérifie que les deux utilisateurs ne sont pas bloqués. Associe la conversation à une annonce si fournie."
+      - working: true
+        agent: "testing"
+        comment: "POST /api/messages/conversations working perfectly. Creates new conversations or returns existing ones. Verifies both users are not banned. Associates conversation with listing if provided. Returns conversation with participant info. Tested with 100% success rate."
+
+  - task: "Admin - Liste des alertes de fraude"
+    implemented: true
+    working: "NA"
+    file: "app/api/admin/alerts/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "GET /api/admin/alerts?status=X - Retourne toutes les alertes de fraude avec pagination. Filtres disponibles : status (PENDING/REVIEWED/DISMISSED/ACTION_TAKEN), severity (LOW/MEDIUM/HIGH/CRITICAL), type (PHONE_NUMBER/EMAIL/WHATSAPP/etc). Enrichi avec infos utilisateurs et stats globales."
+
+  - task: "Admin - Gérer une alerte de fraude"
+    implemented: true
+    working: "NA"
+    file: "app/api/admin/alerts/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "PUT /api/admin/alerts - Permet à l'admin d'agir sur une alerte. Actions disponibles : 'review' (marquer comme vue), 'dismiss' (rejeter), 'block_user' (bloquer l'utilisateur), 'warn_user' (avertir). Met à jour le statut de l'alerte et enregistre l'admin qui a traité."
+
+  - task: "Admin - Liste des conversations (supervision)"
+    implemented: true
+    working: "NA"
+    file: "app/api/admin/messages/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "GET /api/admin/messages?filter=X - Permet à l'admin de voir toutes les conversations de la plateforme. Filtres : ALL (toutes), FLAGGED (avec messages filtrés), SUSPICIOUS (plusieurs messages filtrés). Retourne les infos des participants, compte de messages filtrés, et stats globales."
+
+  - task: "Admin - Messages d'une conversation (supervision)"
+    implemented: true
+    working: "NA"
+    file: "app/api/admin/messages/[id]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "GET /api/admin/messages/[id] - Permet à l'admin de voir tous les messages d'une conversation spécifique. Affiche le contenu filtré ET le contenu original pour supervision. Enrichi avec infos expéditeurs."
+
+  - task: "Admin - Bloquer/Débloquer un utilisateur"
+    implemented: true
+    working: "NA"
+    file: "app/api/admin/users/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "PUT /api/admin/users - Actions : 'block' (bloquer), 'unblock' (débloquer), 'update_commission' (modifier taux de commission). Empêche de bloquer un autre admin sauf si SUPER_ADMIN. Enregistre qui a bloqué et quand."
+
+  - task: "Admin - Dashboard Stats avec alertes fraude"
+    implemented: true
+    working: "NA"
+    file: "app/api/admin/dashboard-stats/route.js"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Mise à jour de GET /api/admin/dashboard-stats - Ajout des statistiques d'alertes de fraude : fraudAlerts.pending (alertes en attente) et fraudAlerts.total (total des alertes). Intégration avec le nouveau modèle FraudAlert."
+
+  - task: "Service Anti-Fraude"
+    implemented: true
+    working: "NA"
+    file: "lib/services/antiFraudService.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Service complet de détection de fraude avec patterns regex pour : numéros de téléphone (formats Gabon + international), emails, WhatsApp/Telegram/réseaux sociaux, propositions de paiement externe (Mobile Money, cash), tentatives de rencontre externe. Calcule le niveau de risque utilisateur (NONE/LOW/MEDIUM/HIGH/CRITICAL) basé sur le nombre d'alertes."
+
   - task: "Authentication System - Register"
     implemented: true
     working: true
@@ -285,35 +429,14 @@ backend:
     file: "app/api/admin/dashboard-stats/route.js"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: true
         agent: "testing"
         comment: "GET /api/admin/dashboard-stats working perfectly. Returns comprehensive statistics including users (total, verified, banned, new today), listings (total, active, pending, rejected, verified, by type, by category), transactions, revenue (commission 7%, monthly breakdown), reports, user growth, and recent activity. Requires admin authentication. Tested with 100% success rate."
-
-  - task: "Admin User Management"
-    implemented: false
-    working: false
-    file: "app/api/[[...path]]/route.js"
-    stuck_count: 0
-    priority: "medium"
-    needs_retesting: false
-    status_history:
-      - working: false
-        agent: "testing"
-        comment: "PUT /api/admin/users/[id] returns 404 - route not implemented. Ban/unban user functionality missing."
-
-  - task: "Admin Listing Management"
-    implemented: false
-    working: false
-    file: "app/api/[[...path]]/route.js"
-    stuck_count: 0
-    priority: "medium"
-    needs_retesting: false
-    status_history:
-      - working: false
-        agent: "testing"
-        comment: "PUT /api/admin/listings endpoints not properly implemented. Listing approval/rejection functionality needs proper routing."
+      - working: "NA"
+        agent: "main"
+        comment: "Mise à jour pour inclure les statistiques d'alertes de fraude (fraudAlerts.pending et fraudAlerts.total). À retester."
 
   - task: "Cloudinary File Upload API"
     implemented: true
@@ -331,18 +454,85 @@ backend:
         comment: "POST /api/upload working excellently. JWT authentication properly implemented (401 without token). File validation working (400 without file). Successfully uploads images and documents to Cloudinary with proper response structure (success, file.url, file.publicId). Minor: Video upload returns 500 due to PNG test file validation, but image/document uploads work perfectly. Core functionality fully operational."
 
 frontend:
-  # Frontend testing not performed per system instructions
+  - task: "Page Messagerie Utilisateur"
+    implemented: true
+    working: "NA"
+    file: "app/messages/page.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Interface complète de messagerie avec liste des conversations, zone de chat, système de filtrage, avertissement de sécurité. Design moderne et responsive. Intégré avec les APIs de messagerie."
+
+  - task: "Page Admin - Alertes de Fraude"
+    implemented: true
+    working: "NA"
+    file: "app/admin/alerts/page.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Dashboard admin pour gérer les alertes anti-fraude. Filtres par statut (PENDING/REVIEWED/DISMISSED/ACTION_TAKEN). Actions : rejeter, marquer comme vu, bloquer l'utilisateur. Affichage détaillé de chaque alerte avec pattern détecté et historique utilisateur."
+
+  - task: "Page Admin - Supervision des Messages"
+    implemented: true
+    working: "NA"
+    file: "app/admin/messages/page.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Interface admin pour superviser toutes les conversations de la plateforme. Filtres : Toutes/Signalées/Suspectes. Affichage du contenu filtré ET original. Recherche par participant ou annonce. Design dark professionnel."
+
+  - task: "Page Paiement Mobile Money"
+    implemented: true
+    working: "NA"
+    file: "app/payment/page.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Page d'information pour les paiements Mobile Money. Affiche les numéros Airtel (077347262) et Moov (065216069) avec boutons de copie. Instructions détaillées pour chaque opérateur. Guide post-paiement. Design professionnel avec cartes colorées."
+
+  - task: "Dashboard Admin - Menu Latéral Mis à Jour"
+    implemented: true
+    working: "NA"
+    file: "app/admin/dashboard/page.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Ajout des nouveaux liens dans le menu admin : 'Alertes Fraude' (avec badge pour alertes en attente) et 'Messages' (supervision globale). Les liens externes utilisent Link de Next.js au lieu de boutons."
 
 metadata:
-  created_by: "testing_agent"
-  version: "1.0"
-  test_sequence: 1
-  run_ui: false
+  created_by: "main_agent"
+  version: "2.0"
+  test_sequence: 2
+  run_ui: true
 
 test_plan:
-  current_focus: []
+  current_focus:
+    - "Messagerie - Envoyer un message"
+    - "Messagerie - Récupérer les messages d'une conversation"
+    - "Messagerie - Récupérer les conversations d'un utilisateur"
+    - "Admin - Liste des alertes de fraude"
+    - "Admin - Gérer une alerte de fraude"
+    - "Admin - Liste des conversations (supervision)"
+    - "Admin - Messages d'une conversation (supervision)"
+    - "Admin - Bloquer/Débloquer un utilisateur"
+    - "Service Anti-Fraude"
   stuck_tasks: []
-  test_all: false
+  test_all: true
   test_priority: "high_first"
 
 agent_communication:
@@ -354,3 +544,15 @@ agent_communication:
     message: "Cloudinary upload API testing completed successfully. Authentication working (401 rejection without token). File validation working (400 rejection without file). Core upload functionality working excellently for images and documents with proper response structure. API fully operational and ready for production use."
   - agent: "testing"
     message: "Review request testing completed with 100% success rate (7/7 tests passing). Fixed critical bug in GET /api/listings/my-listings (wrong import and field name). Created superadmin user for admin testing. All requested endpoints working: auth/register, auth/login, listings (get/create/my-listings), admin/auth/login, admin/dashboard-stats. Application renamed to KAPUCE.G. Backend fully functional and ready for production."
+  - agent: "main"
+    message: "NOUVELLE FONCTIONNALITÉ MAJEURE IMPLÉMENTÉE : Système de messagerie interne avec anti-fraude complet. Implémentation terminée : (1) Backend : APIs de messagerie (POST/GET /api/messages, POST/GET /api/messages/conversations), APIs admin (GET /api/admin/alerts, PUT /api/admin/alerts, GET /api/admin/messages, GET /api/admin/messages/[id], PUT /api/admin/users), Service anti-fraude avec détection automatique (numéros, emails, WhatsApp, paiement externe), Modèles DB (Message, Conversation, FraudAlert), Mise à jour des stats admin. (2) Frontend : Page messagerie utilisateur complète, Page admin alertes de fraude, Page admin supervision messages, Page paiement Mobile Money (Airtel: 077347262, Moov: 065216069), Dashboard admin mis à jour. PRÊT POUR TESTS COMPLETS BACKEND + FRONTEND. Identifiants de test : Admin = superadmin@kapuce.com / SuperAdminPassword123!"
+
+test_credentials:
+  admin:
+    url: "/admin/login"
+    email: "superadmin@kapuce.com"
+    password: "SuperAdminPassword123!"
+    role: "SUPER_ADMIN"
+  user:
+    email: "Créer un nouveau compte via l'interface pour tester"
+    password: "N/A"

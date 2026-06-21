@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { connectDB } from '@/lib/db';
+import connectDB from '@/lib/db';
 import Conversation from '@/lib/models/Conversation';
 import Message from '@/lib/models/Message';
 import User from '@/lib/models/User';
@@ -46,10 +46,20 @@ export async function GET(request) {
         const otherParticipantId = conv.participants.find(p => p !== decoded.userId);
         const otherUser = await User.findById(otherParticipantId).select('fullName profilePicture role').lean();
         
+        // Handle unreadCount - it's a Map in schema but plain object after .lean()
+        let unreadCount = 0;
+        if (conv.unreadCount) {
+          if (typeof conv.unreadCount.get === 'function') {
+            unreadCount = conv.unreadCount.get(decoded.userId) || 0;
+          } else if (typeof conv.unreadCount === 'object') {
+            unreadCount = conv.unreadCount[decoded.userId] || 0;
+          }
+        }
+        
         return {
           ...conv,
           otherParticipant: otherUser || { fullName: 'Utilisateur supprimé' },
-          unreadCount: conv.unreadCount?.get(decoded.userId) || 0,
+          unreadCount,
         };
       })
     );
