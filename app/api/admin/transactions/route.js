@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { connectDB } from '@/lib/db';
+import connectDB from '@/lib/db';
 import Transaction from '@/lib/models/Transaction';
 import User from '@/lib/models/User';
 import Listing from '@/lib/models/Listing';
@@ -168,12 +168,12 @@ export async function PUT(request) {
 
       // Recalculer le montant de la commission
       const newCommissionAmount = (transaction.amount * commissionRate) / 100;
-      const newNetAmount = transaction.amount - newCommissionAmount;
+      const newSellerReceives = transaction.amount - newCommissionAmount;
 
       await Transaction.findByIdAndUpdate(transactionId, {
         commissionRate,
         commissionAmount: newCommissionAmount,
-        netAmount: newNetAmount,
+        sellerReceives: newSellerReceives,
         adminModified: true,
         adminModifiedAt: new Date(),
         adminModifiedBy: authCheck.decoded.userId,
@@ -184,7 +184,7 @@ export async function PUT(request) {
         success: true,
         message: `Commission mise à jour: ${commissionRate}% (${newCommissionAmount} FCFA)`,
         newCommissionAmount,
-        newNetAmount,
+        newNetAmount: newSellerReceives,
       });
     } else if (action === 'update_status') {
       if (!['PENDING', 'COMPLETED', 'CANCELLED', 'REFUNDED'].includes(newStatus)) {
@@ -263,7 +263,7 @@ export async function POST(request) {
     }
 
     // Récupérer le vendeur
-    const seller = await User.findById(listing.owner);
+    const seller = await User.findById(listing.ownerId);
     if (!seller) {
       return NextResponse.json({ error: 'Vendeur non trouvé' }, { status: 404 });
     }
@@ -272,20 +272,20 @@ export async function POST(request) {
     let commissionRate = seller.customCommissionRate || DEFAULT_COMMISSION_RATES[seller.role] || 7;
     const amount = listing.price;
     const commissionAmount = (amount * commissionRate) / 100;
-    const netAmount = amount - commissionAmount;
+    const sellerReceives = amount - commissionAmount;
 
     // Créer la transaction
     const transaction = new Transaction({
       listingId,
       buyerId: decoded.userId,
-      sellerId: listing.owner,
+      sellerId: listing.ownerId,
       type: listing.category,
       amount,
       commissionRate,
       commissionAmount,
-      netAmount,
+      sellerReceives,
       paymentMethod,
-      status: 'PENDING',
+      status: 'INITIATED',
     });
     await transaction.save();
 

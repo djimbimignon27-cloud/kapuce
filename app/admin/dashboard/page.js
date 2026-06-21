@@ -229,7 +229,7 @@ export default function AdminDashboard() {
     { id: 'listings', label: 'Annonces', icon: FileText, badge: stats?.listings?.pending || 0, color: 'yellow' },
     { id: 'alerts', label: 'Alertes Fraude', icon: Shield, badge: stats?.fraudAlerts?.pending || 0, color: 'red', link: '/admin/alerts' },
     { id: 'messages', label: 'Messages', icon: MessageCircle, badge: null, link: '/admin/messages' },
-    { id: 'transactions', label: 'Transactions', icon: DollarSign, badge: stats?.transactions?.total || 0 },
+    { id: 'transactions', label: 'Transactions', icon: DollarSign, badge: stats?.transactions?.total || 0, link: '/admin/transactions-management' },
     { id: 'reports', label: 'Signalements', icon: AlertTriangle, badge: stats?.reports?.pending || 0, color: 'red' },
   ];
 

@@ -529,6 +529,51 @@ frontend:
         agent: "testing"
         comment: "FIXED: Import manquant de MessageCircle ajouté dans lucide-react imports (ligne 15). Dashboard admin testé et fonctionnel. Interface complète avec: sidebar avec logo 'KAPUCE.G Admin', menu latéral avec tous les items (Dashboard, Utilisateurs, Annonces, Alertes Fraude, Messages, Transactions, Signalements), nouveaux liens 'Alertes Fraude' et 'Messages' fonctionnels (utilisant Link de Next.js), badges affichés pour alertes en attente, stats cards visibles, actions rapides, design moderne. Navigation vers /admin/alerts et /admin/messages opérationnelle. Compte admin créé: superadmin@kapuce.com / SuperAdminPassword123!"
 
+  - task: "Admin - Modifier la commission d'une transaction"
+    implemented: true
+    working: true
+    file: "app/api/admin/transactions/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "PUT /api/admin/transactions - Nouvelle fonctionnalité permettant à l'admin de modifier le taux de commission pour chaque transaction individuellement. Actions disponibles : 'update_commission' (modifier commission), 'update_status' (modifier statut). Recalcule automatiquement commissionAmount et sellerReceives. Enregistre adminModified, adminModifiedAt, adminModifiedBy, adminNotes."
+      - working: true
+        agent: "testing"
+        comment: "✅ TOUS LES TESTS PASSÉS (11/11 - 100%). Fonctionnalité de modification de commission entièrement opérationnelle. Tests réussis: (1) Admin login, (2) Création utilisateurs buyer/seller, (3) Création listing, (4) Création transaction, (5) GET /api/admin/transactions retourne liste, (6) PUT /api/admin/transactions modifie commission 7%→5% correctement (5000 FCFA), (7) Commission persistée en base, (8) Validation taux négatif rejetée (400), (9) Validation taux >100 rejetée (400), (10) Non-admin bloqué (403). BUGS CORRIGÉS: (1) Import connectDB (named→default), (2) Transaction model: netAmount→sellerReceives, (3) Admin user: phone manquant, (4) Listing ownerId: owner→ownerId, (5) Transaction status: PENDING→INITIATED, (6) Transaction model: ajout champs adminModified/adminModifiedAt/adminModifiedBy/adminNotes. Calcul commission vérifié: 100000 FCFA × 5% = 5000 FCFA commission, vendeur reçoit 95000 FCFA."
+
+  - task: "Admin - Liste des transactions"
+    implemented: true
+    working: true
+    file: "app/api/admin/transactions/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "GET /api/admin/transactions - Retourne toutes les transactions avec pagination, filtres (status, userId), enrichi avec infos buyer/seller/listing, statistiques par statut."
+      - working: true
+        agent: "testing"
+        comment: "GET /api/admin/transactions working perfectly. Returns transactions list with pagination, filters, enriched data (buyer, seller, listing info), and statistics by status. Tested with 100% success rate."
+
+  - task: "Admin - Créer une transaction"
+    implemented: true
+    working: true
+    file: "app/api/admin/transactions/route.js"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "POST /api/admin/transactions - Permet de créer une transaction. Calcule automatiquement la commission selon le rôle du vendeur (USER: 7%, OWNER: 5%, AGENCY: 3%, PROFESSIONAL: 4%). Retourne infos de paiement Mobile Money (Airtel: 077347262, Moov: 065216069)."
+      - working: true
+        agent: "testing"
+        comment: "POST /api/admin/transactions working correctly after bug fixes. Creates transactions with proper commission calculation. FIXED: (1) Import connectDB, (2) Use ownerId instead of owner, (3) Use sellerReceives instead of netAmount, (4) Use INITIATED status instead of PENDING. Tested with 100% success rate."
+
 metadata:
   created_by: "main_agent"
   version: "2.0"
@@ -537,17 +582,11 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Messagerie - Envoyer un message"
-    - "Messagerie - Récupérer les messages d'une conversation"
-    - "Messagerie - Récupérer les conversations d'un utilisateur"
-    - "Admin - Liste des alertes de fraude"
-    - "Admin - Gérer une alerte de fraude"
-    - "Admin - Liste des conversations (supervision)"
-    - "Admin - Messages d'une conversation (supervision)"
-    - "Admin - Bloquer/Débloquer un utilisateur"
-    - "Service Anti-Fraude"
+    - "Admin - Modifier la commission d'une transaction"
+    - "Admin - Liste des transactions"
+    - "Admin - Créer une transaction"
   stuck_tasks: []
-  test_all: true
+  test_all: false
   test_priority: "high_first"
 
 agent_communication:
@@ -563,6 +602,8 @@ agent_communication:
     message: "NOUVELLE FONCTIONNALITÉ MAJEURE IMPLÉMENTÉE : Système de messagerie interne avec anti-fraude complet. Implémentation terminée : (1) Backend : APIs de messagerie (POST/GET /api/messages, POST/GET /api/messages/conversations), APIs admin (GET /api/admin/alerts, PUT /api/admin/alerts, GET /api/admin/messages, GET /api/admin/messages/[id], PUT /api/admin/users), Service anti-fraude avec détection automatique (numéros, emails, WhatsApp, paiement externe), Modèles DB (Message, Conversation, FraudAlert), Mise à jour des stats admin. (2) Frontend : Page messagerie utilisateur complète, Page admin alertes de fraude, Page admin supervision messages, Page paiement Mobile Money (Airtel: 077347262, Moov: 065216069), Dashboard admin mis à jour. PRÊT POUR TESTS COMPLETS BACKEND + FRONTEND. Identifiants de test : Admin = superadmin@kapuce.com / SuperAdminPassword123!"
   - agent: "testing"
     message: "✅ TESTS FRONTEND COMPLÉTÉS - Toutes les nouvelles pages testées et fonctionnelles. BUGS CORRIGÉS: (1) app/admin/alerts/page.js ligne 57: 'adminToken' → 'adminAccessToken', (2) app/admin/dashboard/page.js ligne 15: Import manquant de MessageCircle ajouté, (3) Compte admin créé dans MongoDB avec champ 'passwordHash' correct. RÉSULTATS: ✅ Page Messagerie Utilisateur (/messages) - Interface complète avec liste conversations, chat, recherche, avertissement sécurité. ✅ Page Paiement Mobile Money (/payment) - Numéros Airtel (077347262) et Moov (065216069) affichés, boutons copier fonctionnels. ✅ Dashboard Admin (/admin/dashboard) - Sidebar avec nouveaux liens 'Alertes Fraude' et 'Messages' opérationnels. ✅ Page Alertes de Fraude (/admin/alerts) - Stats, filtres, actions admin fonctionnels, design dark. ✅ Page Supervision Messages (/admin/messages) - Filtres, contenu filtré/original visible, design dark. IDENTIFIANTS ADMIN: superadmin@kapuce.com / SuperAdminPassword123! - Toutes les pages nécessitent authentification (redirection vers login si non connecté)."
+  - agent: "testing"
+    message: "🎉 NOUVELLE FONCTIONNALITÉ TESTÉE - MODIFICATION DES COMMISSIONS PAR TRANSACTION - 100% RÉUSSITE (11/11 tests). ✅ FONCTIONNALITÉ ENTIÈREMENT OPÉRATIONNELLE. L'admin peut maintenant modifier le taux de commission pour chaque transaction individuellement via PUT /api/admin/transactions. Tests réussis: (1) Admin login, (2-3) Création users buyer/seller, (4) Création listing, (5) Création transaction, (6) GET /api/admin/transactions retourne liste avec pagination/filtres/stats, (7) PUT modification commission 7%→5% avec recalcul correct (100000 FCFA × 5% = 5000 FCFA commission, vendeur reçoit 95000 FCFA), (8) Commission persistée en base avec adminNotes, (9) Validation taux négatif rejetée (400), (10) Validation taux >100 rejetée (400), (11) Non-admin bloqué (403). BUGS CRITIQUES CORRIGÉS: (1) app/api/admin/transactions/route.js: Import connectDB (named→default), (2) Transaction model: netAmount→sellerReceives, (3) Admin user: phone manquant ajouté, (4) Listing: owner→ownerId, (5) Transaction status: PENDING→INITIATED, (6) Transaction model: ajout champs adminModified/adminModifiedAt/adminModifiedBy/adminNotes. API PRÊTE POUR PRODUCTION."
 
 test_credentials:
   admin:
