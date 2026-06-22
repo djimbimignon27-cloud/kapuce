@@ -148,6 +148,21 @@ export async function POST(request) {
       }
     }
 
+    // Validation des médias (5 photos max + 1 vidéo max)
+    if (body.images && Array.isArray(body.images) && body.images.length > 5) {
+      return NextResponse.json(
+        { error: 'Maximum 5 photos autorisées par annonce' },
+        { status: 400 }
+      );
+    }
+
+    if (body.video && typeof body.video === 'object' && Array.isArray(body.video)) {
+      return NextResponse.json(
+        { error: 'Maximum 1 vidéo autorisée par annonce' },
+        { status: 400 }
+      );
+    }
+
     // Préparer les données
     const listingData = {
       title: body.title,
