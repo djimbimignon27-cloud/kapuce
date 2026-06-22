@@ -26,6 +26,7 @@ export default function PayListingPage() {
   const [paymentReference, setPaymentReference] = useState('');
   const [paymentProof, setPaymentProof] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [settings, setSettings] = useState(null);
 
   const listingId = searchParams.get('listingId');
 
@@ -42,10 +43,26 @@ export default function PayListingPage() {
     
     if (listingId) {
       fetchListing();
+      fetchSettings();
     } else {
       router.push('/listings');
     }
   }, [listingId]);
+
+  const fetchSettings = async () => {
+    try {
+      // Récupérer les taux publics depuis une route non-authentifiée
+      const response = await fetch('/api/settings/public');
+      if (response.ok) {
+        const data = await response.json();
+        setSettings(data.settings);
+      }
+    } catch (error) {
+      console.error('Erreur:', error);
+      // Taux par défaut si erreur
+      setSettings({ commissionRates: { client: 7, owner: 7 } });
+    }
+  };
 
   const fetchListing = async () => {
     try {
@@ -97,7 +114,7 @@ export default function PayListingPage() {
         },
         body: JSON.stringify({
           listingId: listing._id,
-          amount: listing.price,
+          amount: basePrice, // Prix de base (l'API calculera les commissions)
           paymentMethod,
           paymentReference,
           paymentProof,
@@ -141,10 +158,16 @@ export default function PayListingPage() {
     );
   }
 
-  if (!listing) return null;
+  if (!listing || !settings) return null;
 
-  const commission = Math.round(listing.price * 0.07);
-  const ownerReceives = listing.price - commission;
+  const basePrice = listing.price;
+  const clientCommissionRate = settings.commissionRates.client;
+  const ownerCommissionRate = settings.commissionRates.owner;
+  const clientCommission = Math.round(basePrice * (clientCommissionRate / 100));
+  const ownerCommission = Math.round(basePrice * (ownerCommissionRate / 100));
+  const clientPays = basePrice + clientCommission;
+  const ownerReceives = basePrice - ownerCommission;
+  const kapuceTotal = clientCommission + ownerCommission;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
@@ -207,25 +230,32 @@ export default function PayListingPage() {
               <h2 className="text-2xl font-bold mb-2">{listing.title}</h2>
               <p className="text-gray-600 mb-4">{listing.address}, {listing.city}</p>
               
-              <div className="grid md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-xl">
-                <div>
-                  <p className="text-sm text-gray-500 mb-1">Montant Total</p>
-                  <p className="text-2xl font-black text-gray-900">
-                    {new Intl.NumberFormat('fr-FR').format(listing.price)} FCFA
-                  </p>
+              <div className="space-y-3 mb-4">
+                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <span className="text-gray-600">Prix annonce</span>
+                  <span className="text-xl font-bold text-gray-900">
+                    {new Intl.NumberFormat('fr-FR').format(basePrice)} FCFA
+                  </span>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-500 mb-1">Commission KAPUCE.G (7%)</p>
-                  <p className="text-xl font-bold text-kama-gold">
-                    {new Intl.NumberFormat('fr-FR').format(commission)} FCFA
-                  </p>
+                <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <span className="text-blue-700">Frais service KAPUCE.G ({clientCommissionRate}%)</span>
+                  <span className="text-lg font-bold text-blue-700">
+                    + {new Intl.NumberFormat('fr-FR').format(clientCommission)} FCFA
+                  </span>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-500 mb-1">Propriétaire Reçoit</p>
-                  <p className="text-xl font-bold text-green-600">
-                    {new Intl.NumberFormat('fr-FR').format(ownerReceives)} FCFA
-                  </p>
+                <div className="flex justify-between items-center p-4 bg-gradient-to-r from-kama-gold/20 to-yellow-100 rounded-lg border-2 border-kama-gold">
+                  <span className="text-gray-900 font-bold">TOTAL À PAYER</span>
+                  <span className="text-2xl font-black text-kama-gold">
+                    {new Intl.NumberFormat('fr-FR').format(clientPays)} FCFA
+                  </span>
                 </div>
+              </div>
+
+              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-xs text-green-700 mb-1">ℹ️ Informations transparentes :</p>
+                <p className="text-sm text-green-800">
+                  Le propriétaire recevra <strong>{new Intl.NumberFormat('fr-FR').format(ownerReceives)} FCFA</strong> après prélèvement de sa commission ({ownerCommissionRate}%).
+                </p>
               </div>
             </CardContent>
           </Card>
