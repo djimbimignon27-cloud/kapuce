@@ -3,6 +3,7 @@ import connectDB from '@/lib/db';
 import Transaction from '@/lib/models/Transaction';
 import Listing from '@/lib/models/Listing';
 import User from '@/lib/models/User';
+import Settings from '@/lib/models/Settings';
 import { authenticateRequest } from '@/lib/auth';
 
 // POST - Créer une transaction (client confirme son paiement)
@@ -36,24 +37,49 @@ export async function POST(request) {
       }, { status: 400 });
     }
 
-    // Calculer la commission
-    const commissionRate = 7; // 7%
-    const commissionAmount = Math.round(amount * (commissionRate / 100));
-    const sellerReceives = amount - commissionAmount;
+    // Récupérer les taux de commission
+    let settings = await Settings.findById('global_settings');
+    if (!settings) {
+      // Créer paramètres par défaut si inexistants
+      settings = new Settings({
+        _id: 'global_settings',
+        commissionRates: { client: 7, owner: 7 },
+      });
+      await settings.save();
+    }
+
+    const clientCommissionRate = settings.commissionRates.client;
+    const ownerCommissionRate = settings.commissionRates.owner;
+
+    // Calculer les commissions
+    // Commission client (ajoutée au prix)
+    const clientCommission = Math.round(amount * (clientCommissionRate / 100));
+    // Commission propriétaire (prélevée du prix)
+    const ownerCommission = Math.round(amount * (ownerCommissionRate / 100));
+    // Total KAPUCE.G
+    const totalCommission = clientCommission + ownerCommission;
+    // Montant que paie le client (prix + commission client)
+    const clientPays = amount + clientCommission;
+    // Montant que reçoit le propriétaire (prix - commission propriétaire)
+    const sellerReceives = amount - ownerCommission;
 
     // Créer la transaction
     const transaction = new Transaction({
       listingId,
       buyerId: auth.userId,
       sellerId: listing.ownerId,
-      amount,
-      commissionRate,
-      commissionAmount,
+      amount: clientPays, // Le montant total payé par le client
+      baseAmount: amount, // Le prix de base de l'annonce
+      commissionRate: clientCommissionRate, // Taux client pour historique
+      ownerCommissionRate: ownerCommissionRate, // Taux propriétaire
+      commissionAmount: totalCommission, // Commission totale KAPUCE.G
+      clientCommission, // Commission prélevée au client
+      ownerCommission, // Commission prélevée au propriétaire
       sellerReceives,
       paymentMethod,
       paymentReference,
       notes: paymentProof,
-      status: 'PENDING_PAYMENT', // En attente de validation par admin
+      status: 'PENDING_PAYMENT',
       transactionType: listing.category === 'SALE' ? 'SALE' : 'RENT',
     });
 
@@ -64,8 +90,12 @@ export async function POST(request) {
       message: 'Paiement enregistré avec succès. Validation sous 24-48h.',
       transaction: {
         _id: transaction._id,
-        amount: transaction.amount,
-        commissionAmount: transaction.commissionAmount,
+        baseAmount: amount,
+        clientPays,
+        clientCommission,
+        ownerCommission,
+        totalCommission,
+        sellerReceives,
         status: transaction.status,
       },
     }, { status: 201 });

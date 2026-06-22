@@ -230,6 +230,7 @@ export default function AdminDashboard() {
     { id: 'alerts', label: 'Alertes Fraude', icon: Shield, badge: stats?.fraudAlerts?.pending || 0, color: 'red', link: '/admin/alerts' },
     { id: 'messages', label: 'Messages', icon: MessageCircle, badge: null, link: '/admin/messages' },
     { id: 'transactions', label: 'Transactions', icon: DollarSign, badge: stats?.transactions?.total || 0, link: '/admin/transactions-management' },
+    { id: 'settings', label: 'Paramètres', icon: Settings, badge: null, link: '/admin/settings' },
     { id: 'reports', label: 'Signalements', icon: AlertTriangle, badge: stats?.reports?.pending || 0, color: 'red' },
   ];
 
