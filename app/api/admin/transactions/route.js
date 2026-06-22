@@ -3,6 +3,8 @@ import connectDB from '@/lib/db';
 import Transaction from '@/lib/models/Transaction';
 import User from '@/lib/models/User';
 import Listing from '@/lib/models/Listing';
+import Conversation from '@/lib/models/Conversation';
+import Message from '@/lib/models/Message';
 import jwt from 'jsonwebtoken';
 
 // Configuration des paiements Mobile Money KAPUCE.G
