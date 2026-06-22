@@ -202,6 +202,12 @@ export default function DashboardPage() {
                     Publier une annonce
                   </Button>
                 </Link>
+                <Link href="/dashboard/visit-requests" className="block">
+                  <Button variant="outline" className="w-full justify-start rounded-xl border-purple-200 text-purple-600 hover:bg-purple-50">
+                    <Calendar className="w-5 h-5 mr-3" />
+                    Demandes de visite
+                  </Button>
+                </Link>
                 <Link href="/favorites" className="block">
                   <Button variant="outline" className="w-full justify-start rounded-xl">
                     <Heart className="w-5 h-5 mr-3 text-red-500" />

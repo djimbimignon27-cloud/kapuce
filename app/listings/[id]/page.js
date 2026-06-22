@@ -66,7 +66,7 @@ export default function ListingDetailPage() {
 
   const fetchVisitRequest = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
       if (!token) return;
 
       const response = await fetch(`/api/visit-requests?listingId=${params.id}`, {
@@ -82,6 +82,9 @@ export default function ListingDetailPage() {
           // Prendre la demande la plus récente
           setVisitRequest(data.visitRequests[0]);
         }
+      } else if (response.status === 401) {
+        // Token expiré ou invalide - ne rien faire (l'utilisateur n'est pas connecté)
+        console.log('Non authentifié - ignoré');
       }
     } catch (error) {
       console.error('Erreur lors de la récupération de la demande de visite:', error);
@@ -89,14 +92,14 @@ export default function ListingDetailPage() {
   };
 
   const handleRequestVisit = async () => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
     if (!token) {
       toast({
         title: 'Connexion requise',
         description: 'Vous devez être connecté pour demander une visite',
         variant: 'destructive',
       });
-      router.push('/login');
+      router.push('/auth/login');
       return;
     }
 
@@ -117,6 +120,19 @@ export default function ListingDetailPage() {
 
       const data = await response.json();
 
+      // Gérer l'erreur 401 (non authentifié)
+      if (response.status === 401) {
+        toast({
+          title: 'Session expirée',
+          description: 'Veuillez vous reconnecter',
+          variant: 'destructive',
+        });
+        localStorage.removeItem('token');
+        localStorage.removeItem('accessToken');
+        router.push('/auth/login');
+        return;
+      }
+
       if (response.ok && data.success) {
         // L'API renvoie visitRequest dans data
         setVisitRequest(data.visitRequest);
@@ -124,8 +140,10 @@ export default function ListingDetailPage() {
           title: 'Demande envoyée !',
           description: 'Le propriétaire va vous contacter via la messagerie pour fixer un rendez-vous',
         });
-        // Recharger les demandes de visite
-        fetchVisitRequest();
+        // Recharger les demandes de visite pour afficher le statut
+        setTimeout(() => {
+          fetchVisitRequest();
+        }, 500);
       } else {
         toast({
           title: 'Erreur',
