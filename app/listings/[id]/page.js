@@ -26,6 +26,8 @@ export default function ListingDetailPage() {
   const { toast } = useToast();
   const [listing, setListing] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [visitRequest, setVisitRequest] = useState(null);
+  const [requestingVisit, setRequestingVisit] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isFavorite, setIsFavorite] = useState(false);
 
@@ -306,13 +308,55 @@ export default function ListingDetailPage() {
               </div>
               
               <CardContent className="p-6 space-y-4">
-                <Button 
-                  onClick={() => router.push(`/pay-listing?listingId=${listing._id}`)}
-                  className="w-full h-16 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold text-lg rounded-xl shadow-xl"
-                >
-                  <DollarSign className="w-6 h-6 mr-2" />
-                  {listing.category === 'SALE' ? 'Acheter ce Bien' : 'Louer ce Bien'}
-                </Button>
+                {/* Bouton Demander Visite - Priorité */}
+                {!visitRequest && (
+                  <Button 
+                    onClick={handleRequestVisit}
+                    disabled={requestingVisit}
+                    className="w-full h-16 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-bold text-lg rounded-xl shadow-xl"
+                  >
+                    <Calendar className="w-6 h-6 mr-2" />
+                    {requestingVisit ? 'Envoi...' : 'Demander une Visite'}
+                  </Button>
+                )}
+
+                {/* Statut demande visite */}
+                {visitRequest && visitRequest.status === 'PENDING' && (
+                  <div className="p-4 bg-yellow-50 border-2 border-yellow-200 rounded-xl">
+                    <p className="text-yellow-800 font-semibold flex items-center gap-2">
+                      <Clock className="w-5 h-5" />
+                      Demande de visite en attente
+                    </p>
+                    <p className="text-yellow-700 text-sm mt-1">Le propriétaire va vous répondre dans la messagerie</p>
+                  </div>
+                )}
+
+                {visitRequest && visitRequest.status === 'ACCEPTED' && (
+                  <div className="p-4 bg-green-50 border-2 border-green-200 rounded-xl">
+                    <p className="text-green-800 font-semibold flex items-center gap-2">
+                      <CheckCircle className="w-5 h-5" />
+                      Visite acceptée !
+                    </p>
+                    <p className="text-green-700 text-sm mt-1">Vous pouvez maintenant procéder au paiement après la visite</p>
+                  </div>
+                )}
+
+                {visitRequest && visitRequest.status === 'REJECTED' && (
+                  <div className="p-4 bg-red-50 border-2 border-red-200 rounded-xl">
+                    <p className="text-red-800 font-semibold">Demande refusée</p>
+                  </div>
+                )}
+
+                {/* Bouton Payer - Visible seulement si visite acceptée */}
+                {visitRequest && visitRequest.status === 'ACCEPTED' && (
+                  <Button 
+                    onClick={() => router.push(`/pay-listing?listingId=${listing._id}`)}
+                    className="w-full h-16 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold text-lg rounded-xl shadow-xl"
+                  >
+                    <DollarSign className="w-6 h-6 mr-2" />
+                    {listing.category === 'SALE' ? 'Acheter ce Bien' : 'Louer ce Bien'}
+                  </Button>
+                )}
 
                 <Button 
                   onClick={() => router.push(`/messages?newConversation=true&receiverId=${listing.ownerId?._id}&listingId=${listing._id}&listingTitle=${encodeURIComponent(listing.title)}`)}
@@ -327,11 +371,11 @@ export default function ListingDetailPage() {
                   <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
                     <Shield className="w-5 h-5 text-blue-600 flex-shrink-0" />
                     <p className="text-sm text-blue-900">
-                      <strong>Communication sécurisée :</strong> Utilisez uniquement la messagerie KAPUCE.G
+                      <strong>Sécurité :</strong> Demandez d'abord une visite, puis payez via KAPUCE.G après avoir vu le bien
                     </p>
                   </div>
                   <p className="text-xs text-gray-500 text-center">
-                    ⚠️ Ne partagez jamais vos coordonnées personnelles (téléphone, email, WhatsApp) dans les messages
+                    ⚠️ Ne payez jamais avant d'avoir vu le bien physiquement
                   </p>
                 </div>
               </CardContent>
