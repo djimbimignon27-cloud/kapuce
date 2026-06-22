@@ -454,6 +454,21 @@ backend:
         comment: "POST /api/upload working excellently. JWT authentication properly implemented (401 without token). File validation working (400 without file). Successfully uploads images and documents to Cloudinary with proper response structure (success, file.url, file.publicId). Minor: Video upload returns 500 due to PNG test file validation, but image/document uploads work perfectly. Core functionality fully operational."
 
 frontend:
+  - task: "Système de Demande de Visite - Frontend"
+    implemented: true
+    working: false
+    file: "app/listings/[id]/page.js"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Système de demande de visite implémenté dans la page de détails d'annonce. Bouton 'Demander une Visite' (violet), affichage du statut (PENDING/ACCEPTED/REJECTED), bouton 'Payer' visible uniquement si visite acceptée. Intégré avec API /api/visit-requests."
+      - working: false
+        agent: "testing"
+        comment: "❌ BUGS CRITIQUES DÉTECTÉS lors des tests UI: (1) Le bouton 'Demander une Visite' ne gère PAS correctement l'absence d'authentification - il devrait rediriger vers /login mais ne le fait pas (ligne 99 du code redirige mais l'utilisateur n'est pas redirigé en pratique), (2) Après clic sur le bouton SANS authentification, aucun message d'erreur n'est affiché, (3) Le statut 'Demande de visite en attente' ne s'affiche PAS après la demande, (4) Aucune conversation n'est créée dans la messagerie. TESTS RÉUSSIS: ✅ Bouton 'Demander une Visite' visible et cliquable, ✅ Bouton 'Payer' correctement caché si visite non acceptée, ✅ Page de détails se charge correctement. CAUSE PROBABLE: L'API retourne 401 mais le frontend ne gère pas l'erreur correctement (pas de toast d'erreur, pas de redirection effective)."
+
   - task: "Page Messagerie Utilisateur"
     implemented: true
     working: true
@@ -468,6 +483,18 @@ frontend:
       - working: true
         agent: "testing"
         comment: "Page messagerie utilisateur testée et fonctionnelle. Interface complète avec: liste des conversations (gauche), zone de chat (droite), barre de recherche, avertissement de sécurité 'Communication sécurisée' visible, bouton 'Mon compte', message 'Sélectionnez une conversation' affiché par défaut. Design moderne et responsive. Nécessite authentification (redirection vers /auth/login si non connecté)."
+  
+  - task: "Page d'Inscription (/auth/register)"
+    implemented: true
+    working: false
+    file: "app/auth/register/page.js"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "testing"
+        comment: "❌ BUG CRITIQUE: La page /auth/register retourne une erreur 404 'This page could not be found' lors de la navigation. Le fichier existe bien dans /app/app/auth/register/page.js mais Next.js ne le trouve pas. Cela empêche la création de nouveaux comptes via l'interface utilisateur. IMPACT: Les utilisateurs ne peuvent pas s'inscrire, ce qui bloque tout le flux de demande de visite."
 
   - task: "Page Admin - Alertes de Fraude"
     implemented: true
@@ -641,6 +668,42 @@ frontend:
         agent: "testing"
         comment: "POST /api/admin/transactions working correctly after bug fixes. Creates transactions with proper commission calculation. FIXED: (1) Import connectDB, (2) Use ownerId instead of owner, (3) Use sellerReceives instead of netAmount, (4) Use INITIATED status instead of PENDING. Tested with 100% success rate."
 
+  - task: "Demandes de Visite - Créer une demande"
+    implemented: true
+    working: "NA"
+    file: "app/api/visit-requests/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "CODE REVIEW COMPLET - POST /api/visit-requests entièrement implémenté. FONCTIONNALITÉS: ✅ Authentification JWT requise (retourne 401 si non authentifié), ✅ Validation listingId requis, ✅ Vérification que l'annonce existe, ✅ Vérification que l'utilisateur n'est pas le propriétaire, ✅ Vérification qu'il n'existe pas déjà une demande PENDING, ✅ Création de la demande avec status PENDING, ✅ Création automatique d'une conversation avec le propriétaire, ✅ Envoi d'un message système automatique au propriétaire avec le contenu de la demande. RETOUR: {success: true, message, visitRequest: {_id, status}}. API prête pour tests en conditions réelles."
+
+  - task: "Demandes de Visite - Récupérer les demandes"
+    implemented: true
+    working: "NA"
+    file: "app/api/visit-requests/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "CODE REVIEW COMPLET - GET /api/visit-requests entièrement implémenté. FONCTIONNALITÉS: ✅ Authentification JWT requise, ✅ Filtre par listingId optionnel (query param), ✅ Retourne toutes les demandes de l'utilisateur connecté (requesterId), ✅ Tri par date de création (plus récentes en premier). RETOUR: {success: true, visitRequests: [...]}. Utilisé par le frontend pour afficher le statut de la demande sur la page de détails d'une annonce."
+
+  - task: "Demandes de Visite - Accepter/Refuser (Propriétaire)"
+    implemented: true
+    working: "NA"
+    file: "app/api/visit-requests/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "CODE REVIEW COMPLET - PUT /api/visit-requests entièrement implémenté. FONCTIONNALITÉS: ✅ Authentification JWT requise, ✅ Validation visitRequestId et action requis, ✅ Vérification que l'utilisateur est bien le propriétaire (ownerId), ✅ Actions disponibles: ACCEPT (accepte la visite, set acceptedAt), REJECT (refuse la visite, set rejectedAt), COMPLETE (marque comme complétée, set completedAt). RETOUR: {success: true, message, visitRequest}. Permet au propriétaire de gérer les demandes de visite depuis la messagerie ou un dashboard."
+
 metadata:
   created_by: "main_agent"
   version: "2.0"
@@ -649,9 +712,10 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Page Paiement Séquestre (/pay-listing)"
-    - "Page Détail Annonce - Boutons Paiement"
-    - "Admin - Valider le paiement d'une transaction"
+    - "Système de Demande de Visite - Frontend"
+    - "Demandes de Visite - Créer une demande"
+    - "Demandes de Visite - Récupérer les demandes"
+    - "Page d'Inscription (/auth/register)"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
@@ -675,6 +739,8 @@ agent_communication:
     message: "🎉 PAGE ADMIN GESTION DES TRANSACTIONS TESTÉE - 100% RÉUSSITE (12/12 tests). ✅ INTERFACE COMPLÈTE ET FONCTIONNELLE. Tests réussis: (1) Admin login, (2) Navigation vers /admin/transactions-management, (3) Header 'Gestion des Transactions' affiché, (4) Bannière dorée explicative visible, (5) 6 filtres de statut fonctionnels (Toutes/INITIATED/PENDING_PAYMENT/PAID/COMPLETED/CANCELLED), (6) Carte transaction avec 4 montants en grille (Montant Total: 100,000 FCFA, Taux: 5%, Commission: 5,000 FCFA doré, Vendeur: 95,000 FCFA vert), (7) Dialog modification s'ouvre correctement, (8) Slider 0-20% fonctionnel et déplaçable, (9) Calcul temps réel opérationnel (5% = 5,000 FCFA commission, 95,000 FCFA vendeur), (10) Notes admin saisies, (11) Soumission réussie avec toast de succès, (12) Badge 'Modifié par admin' affiché après modification. DESIGN: Theme dark cohérent, couleurs dorées pour commissions, badges colorés par statut, grid responsive. NAVIGATION: Lien 'Transactions' dans sidebar du dashboard opérationnel. PAGE PRÊTE POUR PRODUCTION."
   - agent: "testing"
     message: "🔍 CODE REVIEW SYSTÈME DE PAIEMENT SÉQUESTRE COMPLET - FRONTEND ENTIÈREMENT IMPLÉMENTÉ. ✅ 3 PAGES VÉRIFIÉES: (1) PAGE DÉTAIL ANNONCE (/listings/[id]) - Bouton VERT 'Acheter/Louer ce Bien' (h-16, gradient, DollarSign icon) redirige vers /pay-listing?listingId=X, Bouton DORÉ 'Contacter via Messagerie' (bordure kama-gold), Bannière sécurité BLEUE (Shield icon, avertissement anti-fraude), AUCUN bouton téléphone/email/WhatsApp (CORRECT). (2) PAGE PAIEMENT (/pay-listing) - Header KAPUCE.G, Bannière bleue système séquestre (7% commission, 24h délai), Carte info annonce avec GRILLE 3 COLONNES (Total blanc, Commission 7% doré, Propriétaire vert), 2 CARTES MOBILE MONEY côte à côte (Airtel rouge 077347262, Moov bleue 065216069), Boutons Copier avec toast, Sélection visuelle bordure épaisse, Formulaire référence + commentaire, Bouton Confirmer doré, POST /api/transactions/create, Redirection /dashboard?tab=transactions. (3) PAGE ADMIN TRANSACTIONS (/admin/transactions-management) - Déjà testée 100% fonctionnelle. ✅ BUG CRITIQUE CORRIGÉ: Imports manquants (Conversation, Message) dans /app/api/admin/transactions/route.js pour action validate_payment. ⚠️ LIMITATION: Tests UI automatisés bloqués par absence d'annonces en base et complexité formulaire multi-étapes. Code review confirme implémentation complète et conforme aux spécifications."
+  - agent: "testing"
+    message: "🔍 TEST COMPLET DU FLUX DE DEMANDE DE VISITE ET MESSAGERIE - KAPUCE.G. ⚠️ BUGS CRITIQUES DÉTECTÉS: (1) Le bouton 'Demander une Visite' ne gère PAS correctement l'absence d'authentification - clique sans token ne redirige pas vers /login et n'affiche aucun message d'erreur, (2) Après clic sur 'Demander une Visite' SANS authentification, aucun statut 'Demande de visite en attente' ne s'affiche, (3) Aucune conversation n'est créée dans la messagerie après la demande, (4) La page /auth/register semble avoir des problèmes de chargement (404 dans certains cas). ✅ TESTS RÉUSSIS: (1) Navigation de base fonctionne (page d'accueil, /listings, page de détails), (2) Bouton 'Demander une Visite' VISIBLE et CLIQUABLE sur la page de détails, (3) Bouton 'Payer' correctement CACHÉ si visite non acceptée, (4) Page de messagerie accessible et fonctionnelle, (5) Avertissement de sécurité visible. 📋 CODE REVIEW BACKEND: ✅ API /api/visit-requests entièrement implémentée (POST/GET/PUT), ✅ Modèle VisitRequest existe avec tous les champs nécessaires, ✅ Création automatique de conversation et message système au propriétaire. CAUSE PROBABLE DES BUGS: Le frontend ne gère pas correctement les erreurs 401 de l'API (pas de toast, pas de redirection effective vers /login)."
 
 test_credentials:
   admin:

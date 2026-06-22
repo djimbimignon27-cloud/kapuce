@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   ArrowLeft, Home, Car, MapPin, Heart, Share2,
   MessageCircle, CheckCircle, Eye, Calendar, User, Shield, 
-  ChevronLeft, ChevronRight, Star, Building2, Sparkles
+  ChevronLeft, ChevronRight, Star, Building2, Sparkles, DollarSign, Clock
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Toaster } from '@/components/ui/toaster';
@@ -34,6 +34,7 @@ export default function ListingDetailPage() {
   useEffect(() => {
     if (params.id) {
       fetchListing();
+      fetchVisitRequest();
     }
   }, [params.id]);
 
@@ -60,6 +61,87 @@ export default function ListingDetailPage() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchVisitRequest = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await fetch(`/api/visit-requests?listingId=${params.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        // L'API renvoie un tableau visitRequests
+        if (data.visitRequests && data.visitRequests.length > 0) {
+          // Prendre la demande la plus récente
+          setVisitRequest(data.visitRequests[0]);
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération de la demande de visite:', error);
+    }
+  };
+
+  const handleRequestVisit = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      toast({
+        title: 'Connexion requise',
+        description: 'Vous devez être connecté pour demander une visite',
+        variant: 'destructive',
+      });
+      router.push('/login');
+      return;
+    }
+
+    setRequestingVisit(true);
+    
+    try {
+      const response = await fetch('/api/visit-requests', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          listingId: listing._id,
+          message: `Je suis intéressé(e) par ce bien : ${listing.title}`,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // L'API renvoie visitRequest dans data
+        setVisitRequest(data.visitRequest);
+        toast({
+          title: 'Demande envoyée !',
+          description: 'Le propriétaire va vous contacter via la messagerie pour fixer un rendez-vous',
+        });
+        // Recharger les demandes de visite
+        fetchVisitRequest();
+      } else {
+        toast({
+          title: 'Erreur',
+          description: data.error || data.message || 'Impossible d\'envoyer la demande',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('Erreur:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Une erreur est survenue',
+        variant: 'destructive',
+      });
+    } finally {
+      setRequestingVisit(false);
     }
   };
 
