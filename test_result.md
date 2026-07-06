@@ -750,4 +750,109 @@ test_credentials:
     role: "SUPER_ADMIN"
   user:
     email: "Créer un nouveau compte via l'interface pour tester"
-    password: "N/A"
+
+# ====================================================================
+# NOUVELLE PHASE : CONVERSION COMPLÈTE EN PHP PUR + MySQL (Juin 2025)
+# ====================================================================
+# L'utilisateur a demandé la conversion TOTALE du projet en PHP vanilla + MySQL
+# pour hébergement sur LWS mutualisé. Le projet PHP est dans /app/kapuce-php/
+# Serveur de test local : PHP built-in server sur http://localhost:8080
+# MySQL local (MariaDB) : base 'kapuce', user root sans mot de passe.
+# NE PAS TESTER l'app Next.js (port 3000) pour cette phase - tester UNIQUEMENT le PHP (port 8080).
+
+php_backend:
+  - task: "PHP - Auth (register.php, login.php, logout.php)"
+    implemented: true
+    working: true
+    file: "/app/kapuce-php/register.php"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Conversion PHP complète créée. Auth par sessions PHP (cookies), CSRF token requis."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTS RÉUSSIS (100%). POST /register.php crée comptes CLIENT (role=USER) et PROPRIÉTAIRE (role=OWNER) avec redirection 302 vers /dashboard/index.php. POST /login.php avec superadmin@kapuce.com / SuperAdminPassword123! fonctionne avec redirection vers /admin/index.php. Validation email/password/phone fonctionnelle. Détection doublons email. Sessions PHP persistées correctement."
+  
+  - task: "PHP - Annonces (listings.php, listing.php, dashboard/create-listing.php)"
+    implemented: true
+    working: true
+    file: "/app/kapuce-php/listing.php"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Système complet de gestion d'annonces avec création, modération admin, affichage public."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTS RÉUSSIS (100%). POST /dashboard/create-listing.php crée annonce avec status PENDING (type=HOUSE, category=RENT, sub_category=VILLA, title min 5 chars, description min 20 chars, price, city, address, neighborhood, détails). Redirection 302 vers /dashboard/my-listings.php. Admin POST /admin/listings.php avec action=approve change status PENDING → ACTIVE. Annonce visible sur /listings.php après approbation. Validation champs obligatoires fonctionnelle."
+  
+  - task: "PHP - Demandes de visite (listing.php POST request_visit, dashboard/visit-requests.php accept/reject)"
+    implemented: true
+    working: true
+    file: "/app/kapuce-php/dashboard/visit-requests.php"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Système de demandes de visite avec acceptation/refus par propriétaire et création automatique de conversation."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTS RÉUSSIS (100%). POST /listing.php?id=XXX avec action=request_visit, message, proposed_date crée demande avec status PENDING. Redirection 302. Propriétaire POST /dashboard/visit-requests.php avec visit_id, action=accept change status PENDING → ACCEPTED. Conversation créée automatiquement entre client et propriétaire (vérifiée en base: table conversations). Message système envoyé au propriétaire."
+  
+  - task: "PHP - Messagerie anti-fraude (api/messages.php GET/POST, filtrage téléphone/email)"
+    implemented: true
+    working: true
+    file: "/app/kapuce-php/api/messages.php"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "API messagerie JSON avec système anti-fraude complet. Détecte et masque numéros téléphone, emails, réseaux sociaux, paiements externes."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTS RÉUSSIS (100%). GET /api/messages.php?conversation_id=XXX retourne JSON {success: true, messages: [...]} avec 3 messages système. POST message normal 'Bonjour, on peut se voir demain ?' → is_filtered=0 (non filtré). POST 'Appelez-moi au 077 12 34 56' → is_filtered=1, content='Appelez-moi au [NUMÉRO MASQUÉ]', filter_reason=PHONE_NUMBER, warning affiché, alerte fraude créée (severity=HIGH, status=NEW). POST 'Mon email c'est test@gmail.com' → is_filtered=1, content='Mon email c'est [EMAIL MASQUÉ]', filter_reason=EMAIL, alerte créée. Vérification base: 2 alertes dans fraud_alerts, user.fraud_alert_count=2, user.fraud_risk_level=LOW. Message d'avertissement système ajouté automatiquement après chaque filtrage."
+  
+  - task: "PHP - Transactions séquestre (listing.php start_payment, pay.php, admin/transactions.php validation)"
+    implemented: true
+    working: true
+    file: "/app/kapuce-php/pay.php"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Système de paiement séquestre avec Mobile Money (Airtel/Moov). Commission 7% calculée automatiquement. Validation admin requise."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTS RÉUSSIS (100%). POST /listing.php?id=XXX avec action=start_payment crée transaction et redirige 302 vers /pay.php?id=TX_ID. POST /pay.php?id=TX_ID avec method=AIRTEL_MONEY, phone=077112233 change status → PAID. Vérification base: amount=500000, commission_rate_client=7.00, commission_client=35000 (7% de 500000), seller_receives=465000 (500000-35000), payment_reference=KAP-0173657766 (généré automatiquement). Admin POST /admin/transactions.php avec tx_id, action=complete change status PAID → COMPLETED. Annonce passe en status RENTED (car category=RENT). Calculs commission 100% corrects."
+  
+  - task: "PHP - Admin (login, modération annonces, users ban, taux commission settings.php)"
+    implemented: true
+    working: true
+    file: "/app/kapuce-php/admin/settings.php"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Dashboard admin complet avec login séparé, modération annonces, gestion users, supervision messages/alertes, modification taux commission."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTS RÉUSSIS (100%). POST /admin/login.php avec superadmin@kapuce.com / SuperAdminPassword123! fonctionne (redirection /admin/index.php). GET /admin/messages.php?tab=alerts accessible (page alertes fraude). GET /admin/messages.php?tab=conversations accessible (supervision messages avec contenu original visible). POST /admin/settings.php avec commission_client=10, commission_owner=5 modifie taux en base (redirection 302). Remise à 7%/7% fonctionnelle. Sécurité: GET /dashboard sans session → 302 /login.php, GET /admin sans session → 302 /admin/login.php, GET /api/messages.php sans session → 401 Unauthorized. Toutes les protections fonctionnent."
+
+agent_communication:
+  - agent: "main"
+    message: "Conversion PHP complète créée. Tester via HTTP sur localhost:8080 (PHP built-in server). Auth = sessions PHP (cookies), CSRF token requis dans les formulaires POST (champ 'csrf' - récupérer depuis le HTML de la page). Admin seed: superadmin@kapuce.com / SuperAdminPassword123!. Flux complet à tester: inscription client + propriétaire -> création annonce (sans photos ok) -> admin approuve -> client demande visite -> propriétaire accepte -> conversation créée -> message avec numéro de téléphone doit être masqué [NUMÉRO MASQUÉ] + alerte fraude créée -> client initie paiement -> pay.php simule Mobile Money -> statut PAID -> admin valide -> COMPLETED + annonce SOLD/RENTED."
+  - agent: "testing"
+    message: "🎉 TESTS PHP COMPLETS TERMINÉS - 100% RÉUSSITE (6/6 tâches). Tous les flux métier fonctionnent parfaitement sur http://localhost:8080. DÉTAILS: (1) Auth: inscription CLIENT/OWNER + login admin opérationnels, sessions PHP persistées, CSRF tokens validés. (2) Annonces: création avec status PENDING, modération admin PENDING→ACTIVE, affichage public après approbation. (3) Demandes visite: création status PENDING, acceptation propriétaire PENDING→ACCEPTED, conversation créée automatiquement. (4) Messagerie anti-fraude: GET/POST /api/messages.php fonctionnels, filtrage téléphone [NUMÉRO MASQUÉ] + email [EMAIL MASQUÉ] opérationnel, alertes fraude créées (severity HIGH), fraud_alert_count incrémenté, fraud_risk_level calculé (LOW pour 2 alertes), messages d'avertissement système ajoutés. (5) Transactions séquestre: initiation paiement, paiement Mobile Money status PAID, commission 7% calculée correctement (35000 FCFA sur 500000), seller_receives=465000, payment_reference généré (KAP-), validation admin PAID→COMPLETED, annonce RENTED. (6) Admin: login séparé, supervision messages/alertes accessible, modification taux commission 7%→10%/5%→7% fonctionnelle. Sécurité: redirections /login.php et /admin/login.php, API 401 sans session. AUCUN BUG CRITIQUE. Application PHP prête pour production LWS."

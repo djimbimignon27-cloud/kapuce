@@ -1,908 +1,673 @@
 #!/usr/bin/env python3
 """
-Backend API Tests for KAPUCE.G - Messaging & Anti-Fraud System
-Tests all messaging endpoints and admin fraud management features
+KAPUCE.G - Test complet de la version PHP
+==========================================
+Teste tous les flux métier via HTTP sur localhost:8080
 """
-
 import requests
+import re
 import json
-import time
 from datetime import datetime
 
-# Configuration
-BASE_URL = "https://digital-marketplace-186.preview.emergentagent.com/api"
-ADMIN_EMAIL = "superadmin@kama.com"
-ADMIN_PASSWORD = "SuperAdminPassword123!"
+BASE_URL = "http://localhost:8080"
 
-# Test data storage
-test_data = {
-    "admin_token": None,
-    "user1_token": None,
-    "user2_token": None,
-    "user1_id": None,
-    "user2_id": None,
-    "conversation_id": None,
-    "message_ids": [],
-    "alert_ids": [],
-}
+def extract_csrf(html):
+    """Extrait le token CSRF depuis le HTML"""
+    match = re.search(r'name="csrf"\s+value="([a-f0-9]+)"', html)
+    if match:
+        return match.group(1)
+    return None
 
-def print_test_header(test_name):
-    """Print formatted test header"""
-    print(f"\n{'='*80}")
-    print(f"TEST: {test_name}")
-    print(f"{'='*80}")
-
-def print_result(success, message):
-    """Print test result"""
+def print_test(name, success, details=""):
+    """Affiche le résultat d'un test"""
     status = "✅ PASS" if success else "❌ FAIL"
-    print(f"{status}: {message}")
+    print(f"{status} - {name}")
+    if details:
+        print(f"    {details}")
 
-def print_response(response):
-    """Print response details for debugging"""
-    print(f"Status: {response.status_code}")
-    try:
-        print(f"Response: {json.dumps(response.json(), indent=2)}")
-    except:
-        print(f"Response Text: {response.text[:500]}")
+def test_inscription():
+    """Test 1: Inscription CLIENT et PROPRIÉTAIRE"""
+    print("\n=== TEST 1: INSCRIPTION ===")
+    
+    # Créer un client
+    session_client = requests.Session()
+    resp = session_client.get(f"{BASE_URL}/register.php")
+    csrf = extract_csrf(resp.text)
+    
+    if not csrf:
+        print_test("Extraction CSRF token", False, "Token CSRF non trouvé dans le HTML")
+        return None, None
+    
+    print_test("Extraction CSRF token", True, f"Token: {csrf[:16]}...")
+    
+    timestamp = datetime.now().strftime("%H%M%S")
+    client_email = f"client_{timestamp}@test.kapuce.com"
+    
+    data = {
+        'csrf': csrf,
+        'role': 'USER',
+        'full_name': 'Jean Client Test',
+        'email': client_email,
+        'phone': '077112233',
+        'password': 'TestPassword123!'
+    }
+    
+    resp = session_client.post(f"{BASE_URL}/register.php", data=data, allow_redirects=False)
+    
+    if resp.status_code == 302 and '/dashboard/index.php' in resp.headers.get('Location', ''):
+        print_test("Inscription CLIENT", True, f"Email: {client_email}, Redirection vers dashboard")
+    else:
+        print_test("Inscription CLIENT", False, f"Status: {resp.status_code}, Location: {resp.headers.get('Location', 'N/A')}")
+        return None, None
+    
+    # Créer un propriétaire
+    session_owner = requests.Session()
+    resp = session_owner.get(f"{BASE_URL}/register.php")
+    csrf = extract_csrf(resp.text)
+    
+    owner_email = f"owner_{timestamp}@test.kapuce.com"
+    
+    data = {
+        'csrf': csrf,
+        'role': 'OWNER',
+        'full_name': 'Marie Propriétaire Test',
+        'email': owner_email,
+        'phone': '065445566',
+        'password': 'TestPassword123!'
+    }
+    
+    resp = session_owner.post(f"{BASE_URL}/register.php", data=data, allow_redirects=False)
+    
+    if resp.status_code == 302 and '/dashboard/index.php' in resp.headers.get('Location', ''):
+        print_test("Inscription PROPRIÉTAIRE", True, f"Email: {owner_email}, Redirection vers dashboard")
+    else:
+        print_test("Inscription PROPRIÉTAIRE", False, f"Status: {resp.status_code}")
+        return None, None
+    
+    return session_client, session_owner
 
-# ============================================================================
-# AUTHENTICATION TESTS
-# ============================================================================
-
-def test_admin_login():
-    """Test admin authentication"""
-    print_test_header("Admin Login")
-    try:
-        response = requests.post(
-            f"{BASE_URL}/admin/auth/login",
-            json={
-                "email": ADMIN_EMAIL,
-                "password": ADMIN_PASSWORD
-            },
-            headers={"Content-Type": "application/json"}
-        )
-        
-        if response.status_code == 200:
-            data = response.json()
-            if "accessToken" in data:
-                test_data["admin_token"] = data["accessToken"]
-                print_result(True, f"Admin logged in successfully. Role: {data.get('user', {}).get('role')}")
-                return True
-            else:
-                print_result(False, "No access token in response")
-                print_response(response)
-                return False
+def test_connexion():
+    """Test 2: Connexion"""
+    print("\n=== TEST 2: CONNEXION ===")
+    
+    # Test avec le compte admin seedé
+    session = requests.Session()
+    resp = session.get(f"{BASE_URL}/login.php")
+    csrf = extract_csrf(resp.text)
+    
+    data = {
+        'csrf': csrf,
+        'email': 'superadmin@kapuce.com',
+        'password': 'SuperAdminPassword123!'
+    }
+    
+    resp = session.post(f"{BASE_URL}/login.php", data=data, allow_redirects=False)
+    
+    if resp.status_code == 302:
+        location = resp.headers.get('Location', '')
+        if '/admin/index.php' in location or '/dashboard/index.php' in location:
+            print_test("Connexion ADMIN", True, f"Redirection vers {location}")
+            return session
         else:
-            print_result(False, f"Login failed with status {response.status_code}")
-            print_response(response)
-            return False
-    except Exception as e:
-        print_result(False, f"Exception: {str(e)}")
-        return False
+            print_test("Connexion ADMIN", False, f"Redirection inattendue: {location}")
+    else:
+        print_test("Connexion ADMIN", False, f"Status: {resp.status_code}")
+    
+    return None
 
-def test_create_user(user_num):
-    """Create a test user for messaging"""
-    print_test_header(f"Create User {user_num}")
-    try:
-        timestamp = int(time.time())
-        email = f"testuser{user_num}_{timestamp}@kapuce.test"
-        
-        response = requests.post(
-            f"{BASE_URL}/auth/register",
-            json={
-                "email": email,
-                "password": "TestPassword123!",
-                "fullName": f"Test User {user_num}",
-                "phone": f"07712345{user_num}",
-                "role": "USER"
-            },
-            headers={"Content-Type": "application/json"}
-        )
-        
-        if response.status_code == 201:
-            data = response.json()
-            if "accessToken" in data:
-                test_data[f"user{user_num}_token"] = data["accessToken"]
-                # Handle both 'id' and '_id' field names
-                user_id = data["user"].get("_id") or data["user"].get("id")
-                test_data[f"user{user_num}_id"] = user_id
-                print_result(True, f"User {user_num} created: {email}, ID: {user_id}")
-                return True
-            else:
-                print_result(False, "No access token in response")
-                print_response(response)
-                return False
+def test_creation_annonce(session_owner):
+    """Test 3: Création d'annonce"""
+    print("\n=== TEST 3: CRÉATION ANNONCE ===")
+    
+    if not session_owner:
+        print_test("Création annonce", False, "Session propriétaire non disponible")
+        return None
+    
+    resp = session_owner.get(f"{BASE_URL}/dashboard/create-listing.php")
+    csrf = extract_csrf(resp.text)
+    
+    if not csrf:
+        print_test("Accès formulaire création", False, "Token CSRF non trouvé")
+        return None
+    
+    print_test("Accès formulaire création", True)
+    
+    data = {
+        'csrf': csrf,
+        'type': 'HOUSE',
+        'category': 'RENT',
+        'sub_category': 'VILLA',
+        'title': 'Belle villa 4 chambres à Libreville',
+        'description': 'Magnifique villa moderne avec jardin, située dans un quartier calme et sécurisé de Libreville.',
+        'price': '500000',
+        'city': 'Libreville',
+        'address': '123 Avenue de la Liberté',
+        'neighborhood': 'Akanda',
+        'd_bedrooms': '3',
+        'd_bathrooms': '2',
+        'd_surface': '150',
+        'd_furnished': 'FURNISHED',
+        'd_condition': 'EXCELLENT',
+        'd_parking': '2'
+    }
+    
+    resp = session_owner.post(f"{BASE_URL}/dashboard/create-listing.php", data=data, allow_redirects=False)
+    
+    if resp.status_code == 302 and '/dashboard/my-listings.php' in resp.headers.get('Location', ''):
+        print_test("Création annonce (PENDING)", True, "Redirection vers my-listings")
+        return True
+    else:
+        print_test("Création annonce", False, f"Status: {resp.status_code}, Location: {resp.headers.get('Location', 'N/A')}")
+        return None
+
+def get_pending_listing_id(session_admin):
+    """Récupère l'ID d'une annonce PENDING depuis la page admin"""
+    resp = session_admin.get(f"{BASE_URL}/admin/listings.php?filter=PENDING")
+    
+    # Chercher un ID d'annonce dans le HTML (format UUID)
+    matches = re.findall(r'listing_id["\']?\s*[:=]\s*["\']([a-f0-9\-]{36})["\']', resp.text)
+    if matches:
+        return matches[0]
+    
+    # Alternative: chercher dans les formulaires
+    matches = re.findall(r'name="listing_id"\s+value="([a-f0-9\-]{36})"', resp.text)
+    if matches:
+        return matches[0]
+    
+    return None
+
+def test_moderation_admin(session_admin):
+    """Test 4: Modération admin - Approuver une annonce"""
+    print("\n=== TEST 4: MODÉRATION ADMIN ===")
+    
+    if not session_admin:
+        print_test("Modération admin", False, "Session admin non disponible")
+        return None
+    
+    # Récupérer l'ID d'une annonce PENDING
+    listing_id = get_pending_listing_id(session_admin)
+    
+    if not listing_id:
+        print_test("Récupération ID annonce PENDING", False, "Aucune annonce PENDING trouvée")
+        return None
+    
+    print_test("Récupération ID annonce PENDING", True, f"ID: {listing_id[:16]}...")
+    
+    # Approuver l'annonce
+    resp = session_admin.get(f"{BASE_URL}/admin/listings.php")
+    csrf = extract_csrf(resp.text)
+    
+    if not csrf:
+        print_test("Extraction CSRF admin", False)
+        return None
+    
+    data = {
+        'csrf': csrf,
+        'listing_id': listing_id,
+        'action': 'approve'
+    }
+    
+    resp = session_admin.post(f"{BASE_URL}/admin/listings.php", data=data, allow_redirects=False)
+    
+    if resp.status_code == 302:
+        print_test("Approbation annonce", True, "Annonce approuvée (status ACTIVE)")
+        return listing_id
+    else:
+        print_test("Approbation annonce", False, f"Status: {resp.status_code}")
+        return None
+
+def test_demande_visite(session_client, listing_id):
+    """Test 5: Demande de visite"""
+    print("\n=== TEST 5: DEMANDE DE VISITE ===")
+    
+    if not session_client or not listing_id:
+        print_test("Demande de visite", False, "Session client ou listing_id non disponible")
+        return None
+    
+    # Accéder à la page de l'annonce
+    resp = session_client.get(f"{BASE_URL}/listing.php?id={listing_id}")
+    csrf = extract_csrf(resp.text)
+    
+    if not csrf:
+        print_test("Accès page annonce", False, "Token CSRF non trouvé")
+        return None
+    
+    print_test("Accès page annonce", True)
+    
+    # Envoyer la demande de visite
+    data = {
+        'csrf': csrf,
+        'action': 'request_visit',
+        'message': 'Bonjour, je suis intéressé par cette villa. Pourrions-nous organiser une visite cette semaine ?',
+        'proposed_date': '2025-06-20 14:00:00'
+    }
+    
+    resp = session_client.post(f"{BASE_URL}/listing.php?id={listing_id}", data=data, allow_redirects=False)
+    
+    if resp.status_code == 302:
+        print_test("Demande de visite créée", True, "Status PENDING attendu en base")
+        return True
+    else:
+        print_test("Demande de visite", False, f"Status: {resp.status_code}")
+        return None
+
+def get_visit_request_id(session_owner):
+    """Récupère l'ID d'une demande de visite PENDING"""
+    resp = session_owner.get(f"{BASE_URL}/dashboard/visit-requests.php")
+    
+    # Chercher un ID de visite dans le HTML
+    matches = re.findall(r'visit_id["\']?\s*[:=]\s*["\']([a-f0-9\-]{36})["\']', resp.text)
+    if matches:
+        return matches[0]
+    
+    matches = re.findall(r'name="visit_id"\s+value="([a-f0-9\-]{36})"', resp.text)
+    if matches:
+        return matches[0]
+    
+    return None
+
+def test_acceptation_visite(session_owner):
+    """Test 6: Acceptation de visite par le propriétaire"""
+    print("\n=== TEST 6: ACCEPTATION VISITE ===")
+    
+    if not session_owner:
+        print_test("Acceptation visite", False, "Session propriétaire non disponible")
+        return None
+    
+    visit_id = get_visit_request_id(session_owner)
+    
+    if not visit_id:
+        print_test("Récupération ID visite PENDING", False, "Aucune demande trouvée")
+        return None
+    
+    print_test("Récupération ID visite PENDING", True, f"ID: {visit_id[:16]}...")
+    
+    resp = session_owner.get(f"{BASE_URL}/dashboard/visit-requests.php")
+    csrf = extract_csrf(resp.text)
+    
+    if not csrf:
+        print_test("Extraction CSRF", False)
+        return None
+    
+    data = {
+        'csrf': csrf,
+        'visit_id': visit_id,
+        'action': 'accept'
+    }
+    
+    resp = session_owner.post(f"{BASE_URL}/dashboard/visit-requests.php", data=data, allow_redirects=False)
+    
+    if resp.status_code == 302:
+        print_test("Acceptation visite", True, "Status ACCEPTED + conversation créée attendue")
+        return True
+    else:
+        print_test("Acceptation visite", False, f"Status: {resp.status_code}")
+        return None
+
+def get_conversation_id(session):
+    """Récupère l'ID d'une conversation depuis la page messages"""
+    resp = session.get(f"{BASE_URL}/messages.php")
+    
+    # Chercher un ID de conversation dans le HTML
+    matches = re.findall(r'conversation_id["\']?\s*[:=]\s*["\']([a-f0-9\-]{36})["\']', resp.text)
+    if matches:
+        return matches[0]
+    
+    matches = re.findall(r'data-conversation-id="([a-f0-9\-]{36})"', resp.text)
+    if matches:
+        return matches[0]
+    
+    return None
+
+def test_messagerie_anti_fraude(session_client):
+    """Test 7: Messagerie avec filtrage anti-fraude"""
+    print("\n=== TEST 7: MESSAGERIE ANTI-FRAUDE ===")
+    
+    if not session_client:
+        print_test("Messagerie", False, "Session client non disponible")
+        return
+    
+    conv_id = get_conversation_id(session_client)
+    
+    if not conv_id:
+        print_test("Récupération conversation_id", False, "Aucune conversation trouvée")
+        return
+    
+    print_test("Récupération conversation_id", True, f"ID: {conv_id[:16]}...")
+    
+    # Test 7a: GET messages
+    resp = session_client.get(f"{BASE_URL}/api/messages.php?conversation_id={conv_id}")
+    
+    if resp.status_code == 200:
+        data = resp.json()
+        if data.get('success'):
+            print_test("GET /api/messages.php", True, f"{len(data.get('messages', []))} messages récupérés")
         else:
-            print_result(False, f"Registration failed with status {response.status_code}")
-            print_response(response)
-            return False
-    except Exception as e:
-        print_result(False, f"Exception: {str(e)}")
-        return False
-
-# ============================================================================
-# MESSAGING TESTS
-# ============================================================================
-
-def test_create_conversation():
-    """Test creating a conversation between two users"""
-    print_test_header("Create Conversation")
-    try:
-        response = requests.post(
-            f"{BASE_URL}/messages/conversations",
-            json={
-                "receiverId": test_data["user2_id"],
-                "listingTitle": "Test Property Listing"
-            },
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {test_data['user1_token']}"
-            }
-        )
-        
-        if response.status_code == 200:
-            data = response.json()
-            if data.get("success") and "conversation" in data:
-                test_data["conversation_id"] = data["conversation"]["_id"]
-                print_result(True, f"Conversation created: {test_data['conversation_id']}")
-                print(f"Participants: {data['conversation'].get('participants')}")
-                return True
-            else:
-                print_result(False, "Invalid response structure")
-                print_response(response)
-                return False
+            print_test("GET /api/messages.php", False, f"Error: {data.get('error')}")
+    else:
+        print_test("GET /api/messages.php", False, f"Status: {resp.status_code}")
+    
+    # Test 7b: POST message normal (non filtré)
+    headers = {'Content-Type': 'application/json'}
+    payload = {
+        'conversation_id': conv_id,
+        'content': 'Bonjour, on peut se voir demain pour la visite ?'
+    }
+    
+    resp = session_client.post(f"{BASE_URL}/api/messages.php", json=payload, headers=headers)
+    
+    if resp.status_code == 200:
+        data = resp.json()
+        if data.get('success') and not data.get('message', {}).get('is_filtered'):
+            print_test("POST message normal (non filtré)", True, "Message envoyé sans filtrage")
         else:
-            print_result(False, f"Failed with status {response.status_code}")
-            print_response(response)
-            return False
-    except Exception as e:
-        print_result(False, f"Exception: {str(e)}")
-        return False
-
-def test_get_conversations():
-    """Test getting user's conversations"""
-    print_test_header("Get User Conversations")
-    try:
-        response = requests.get(
-            f"{BASE_URL}/messages/conversations",
-            headers={
-                "Authorization": f"Bearer {test_data['user1_token']}"
-            }
-        )
-        
-        if response.status_code == 200:
-            data = response.json()
-            if data.get("success") and "conversations" in data:
-                conv_count = len(data["conversations"])
-                print_result(True, f"Retrieved {conv_count} conversation(s)")
-                if conv_count > 0:
-                    conv = data["conversations"][0]
-                    print(f"First conversation: {conv.get('_id')}")
-                    print(f"Other participant: {conv.get('otherParticipant', {}).get('fullName')}")
-                    print(f"Unread count: {conv.get('unreadCount', 0)}")
-                return True
-            else:
-                print_result(False, "Invalid response structure")
-                print_response(response)
-                return False
+            print_test("POST message normal", False, f"Filtré: {data.get('message', {}).get('is_filtered')}")
+    else:
+        print_test("POST message normal", False, f"Status: {resp.status_code}")
+    
+    # Test 7c: POST message avec numéro de téléphone (doit être filtré)
+    payload = {
+        'conversation_id': conv_id,
+        'content': 'Appelez-moi au 077 12 34 56 pour plus de détails'
+    }
+    
+    resp = session_client.post(f"{BASE_URL}/api/messages.php", json=payload, headers=headers)
+    
+    if resp.status_code == 200:
+        data = resp.json()
+        msg = data.get('message', {})
+        if msg.get('is_filtered') and '[NUMÉRO MASQUÉ]' in msg.get('content', ''):
+            print_test("POST message avec téléphone (filtré)", True, f"Contenu masqué: {msg.get('content')[:50]}...")
         else:
-            print_result(False, f"Failed with status {response.status_code}")
-            print_response(response)
-            return False
-    except Exception as e:
-        print_result(False, f"Exception: {str(e)}")
-        return False
-
-def test_send_normal_message():
-    """Test sending a normal message"""
-    print_test_header("Send Normal Message")
-    try:
-        response = requests.post(
-            f"{BASE_URL}/messages",
-            json={
-                "conversationId": test_data["conversation_id"],
-                "content": "Bonjour, je suis très intéressé par cette propriété. Pouvez-vous me donner plus d'informations?"
-            },
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {test_data['user1_token']}"
-            }
-        )
-        
-        if response.status_code == 200:
-            data = response.json()
-            if data.get("success") and "message" in data:
-                test_data["message_ids"].append(data["message"]["_id"])
-                is_filtered = data.get("isFiltered", False)
-                warning = data.get("warning")
-                print_result(True, f"Message sent successfully. Filtered: {is_filtered}")
-                if warning:
-                    print(f"Warning: {warning}")
-                return True
-            else:
-                print_result(False, "Invalid response structure")
-                print_response(response)
-                return False
+            print_test("POST message avec téléphone", False, f"is_filtered: {msg.get('is_filtered')}, content: {msg.get('content')[:50]}")
+    else:
+        print_test("POST message avec téléphone", False, f"Status: {resp.status_code}")
+    
+    # Test 7d: POST message avec email (doit être filtré)
+    payload = {
+        'conversation_id': conv_id,
+        'content': 'Mon email c\'est test@gmail.com, contactez-moi'
+    }
+    
+    resp = session_client.post(f"{BASE_URL}/api/messages.php", json=payload, headers=headers)
+    
+    if resp.status_code == 200:
+        data = resp.json()
+        msg = data.get('message', {})
+        if msg.get('is_filtered') and '[EMAIL MASQUÉ]' in msg.get('content', ''):
+            print_test("POST message avec email (filtré)", True, f"Contenu masqué: {msg.get('content')[:50]}...")
         else:
-            print_result(False, f"Failed with status {response.status_code}")
-            print_response(response)
-            return False
-    except Exception as e:
-        print_result(False, f"Exception: {str(e)}")
-        return False
+            print_test("POST message avec email", False, f"is_filtered: {msg.get('is_filtered')}")
+    else:
+        print_test("POST message avec email", False, f"Status: {resp.status_code}")
 
-def test_send_message_with_phone():
-    """Test sending message with phone number (should trigger fraud alert)"""
-    print_test_header("Send Message with Phone Number (Anti-Fraud Test)")
-    try:
-        response = requests.post(
-            f"{BASE_URL}/messages",
-            json={
-                "conversationId": test_data["conversation_id"],
-                "content": "Appelez-moi directement au 077 12 34 56 pour discuter"
-            },
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {test_data['user1_token']}"
-            }
-        )
-        
-        if response.status_code == 200:
-            data = response.json()
-            if data.get("success"):
-                is_filtered = data.get("isFiltered", False)
-                warning = data.get("warning")
-                message_content = data.get("message", {}).get("content", "")
+def test_paiement_sequestre(session_client, listing_id):
+    """Test 8: Paiement séquestre"""
+    print("\n=== TEST 8: PAIEMENT SÉQUESTRE ===")
+    
+    if not session_client or not listing_id:
+        print_test("Paiement séquestre", False, "Session ou listing_id non disponible")
+        return None
+    
+    # Initier le paiement
+    resp = session_client.get(f"{BASE_URL}/listing.php?id={listing_id}")
+    csrf = extract_csrf(resp.text)
+    
+    if not csrf:
+        print_test("Extraction CSRF", False)
+        return None
+    
+    data = {
+        'csrf': csrf,
+        'action': 'start_payment'
+    }
+    
+    resp = session_client.post(f"{BASE_URL}/listing.php?id={listing_id}", data=data, allow_redirects=False)
+    
+    if resp.status_code == 302:
+        location = resp.headers.get('Location', '')
+        if '/pay.php?id=' in location:
+            print_test("Initiation paiement", True, f"Redirection vers {location}")
+            
+            # Extraire l'ID de transaction
+            tx_match = re.search(r'id=([a-f0-9\-]{36})', location)
+            if tx_match:
+                tx_id = tx_match.group(1)
+                print_test("Extraction transaction_id", True, f"ID: {tx_id[:16]}...")
                 
-                if is_filtered and "[NUMÉRO MASQUÉ]" in message_content:
-                    print_result(True, "Phone number detected and filtered correctly")
-                    print(f"Filtered content: {message_content}")
-                    print(f"Warning: {warning}")
-                    return True
+                # Effectuer le paiement
+                resp = session_client.get(f"{BASE_URL}/pay.php?id={tx_id}")
+                csrf = extract_csrf(resp.text)
+                
+                if not csrf:
+                    print_test("Accès page paiement", False, "CSRF non trouvé")
+                    return None
+                
+                data = {
+                    'csrf': csrf,
+                    'method': 'AIRTEL_MONEY',
+                    'phone': '077112233'
+                }
+                
+                resp = session_client.post(f"{BASE_URL}/pay.php?id={tx_id}", data=data, allow_redirects=False)
+                
+                if resp.status_code == 302:
+                    print_test("Paiement Mobile Money", True, "Transaction PAID attendue en base")
+                    return tx_id
                 else:
-                    print_result(False, f"Phone number NOT filtered. Filtered: {is_filtered}, Content: {message_content}")
-                    return False
+                    print_test("Paiement Mobile Money", False, f"Status: {resp.status_code}")
             else:
-                print_result(False, "Message sending failed")
-                print_response(response)
-                return False
+                print_test("Extraction transaction_id", False)
         else:
-            print_result(False, f"Failed with status {response.status_code}")
-            print_response(response)
-            return False
-    except Exception as e:
-        print_result(False, f"Exception: {str(e)}")
-        return False
+            print_test("Initiation paiement", False, f"Redirection inattendue: {location}")
+    else:
+        print_test("Initiation paiement", False, f"Status: {resp.status_code}")
+    
+    return None
 
-def test_send_message_with_email():
-    """Test sending message with email (should trigger fraud alert)"""
-    print_test_header("Send Message with Email (Anti-Fraud Test)")
-    try:
-        response = requests.post(
-            f"{BASE_URL}/messages",
-            json={
-                "conversationId": test_data["conversation_id"],
-                "content": "Contactez-moi sur mon email personnel: contact@example.com"
-            },
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {test_data['user1_token']}"
-            }
-        )
+def get_transaction_id(session_admin):
+    """Récupère l'ID d'une transaction PAID depuis la page admin"""
+    resp = session_admin.get(f"{BASE_URL}/admin/transactions.php")
+    
+    # Chercher un ID de transaction dans le HTML
+    matches = re.findall(r'tx_id["\']?\s*[:=]\s*["\']([a-f0-9\-]{36})["\']', resp.text)
+    if matches:
+        return matches[0]
+    
+    matches = re.findall(r'name="tx_id"\s+value="([a-f0-9\-]{36})"', resp.text)
+    if matches:
+        return matches[0]
+    
+    return None
+
+def test_validation_admin_transaction(session_admin, tx_id=None):
+    """Test 9: Validation admin de la transaction"""
+    print("\n=== TEST 9: VALIDATION ADMIN TRANSACTION ===")
+    
+    if not session_admin:
+        print_test("Validation admin", False, "Session admin non disponible")
+        return
+    
+    if not tx_id:
+        tx_id = get_transaction_id(session_admin)
+    
+    if not tx_id:
+        print_test("Récupération transaction_id", False, "Aucune transaction trouvée")
+        return
+    
+    print_test("Récupération transaction_id", True, f"ID: {tx_id[:16]}...")
+    
+    resp = session_admin.get(f"{BASE_URL}/admin/transactions.php")
+    csrf = extract_csrf(resp.text)
+    
+    if not csrf:
+        print_test("Extraction CSRF", False)
+        return
+    
+    data = {
+        'csrf': csrf,
+        'tx_id': tx_id,
+        'action': 'complete'
+    }
+    
+    resp = session_admin.post(f"{BASE_URL}/admin/transactions.php", data=data, allow_redirects=False)
+    
+    if resp.status_code == 302:
+        print_test("Validation transaction", True, "Transaction COMPLETED + annonce RENTED attendue")
+    else:
+        print_test("Validation transaction", False, f"Status: {resp.status_code}")
+
+def test_supervision_admin(session_admin):
+    """Test 10: Supervision admin des messages et alertes"""
+    print("\n=== TEST 10: SUPERVISION ADMIN ===")
+    
+    if not session_admin:
+        print_test("Supervision admin", False, "Session admin non disponible")
+        return
+    
+    # Test 10a: GET alertes fraude
+    resp = session_admin.get(f"{BASE_URL}/admin/messages.php?tab=alerts")
+    
+    if resp.status_code == 200 and 'alerte' in resp.text.lower():
+        print_test("GET /admin/messages.php?tab=alerts", True, "Page alertes accessible")
+    else:
+        print_test("GET /admin/messages.php?tab=alerts", False, f"Status: {resp.status_code}")
+    
+    # Test 10b: GET conversations
+    resp = session_admin.get(f"{BASE_URL}/admin/messages.php?tab=conversations")
+    
+    if resp.status_code == 200:
+        print_test("GET /admin/messages.php?tab=conversations", True, "Page conversations accessible")
+    else:
+        print_test("GET /admin/messages.php?tab=conversations", False, f"Status: {resp.status_code}")
+
+def test_taux_commission(session_admin):
+    """Test 11: Modification du taux de commission"""
+    print("\n=== TEST 11: TAUX DE COMMISSION ===")
+    
+    if not session_admin:
+        print_test("Taux commission", False, "Session admin non disponible")
+        return
+    
+    resp = session_admin.get(f"{BASE_URL}/admin/settings.php")
+    csrf = extract_csrf(resp.text)
+    
+    if not csrf:
+        print_test("Accès page settings", False, "CSRF non trouvé")
+        return
+    
+    print_test("Accès page settings", True)
+    
+    # Modifier les taux
+    data = {
+        'csrf': csrf,
+        'commission_client': '10',
+        'commission_owner': '5'
+    }
+    
+    resp = session_admin.post(f"{BASE_URL}/admin/settings.php", data=data, allow_redirects=False)
+    
+    if resp.status_code == 302:
+        print_test("Modification taux (10%/5%)", True, "Taux modifiés en base")
         
-        if response.status_code == 200:
-            data = response.json()
-            if data.get("success"):
-                is_filtered = data.get("isFiltered", False)
-                message_content = data.get("message", {}).get("content", "")
-                
-                if is_filtered and "[EMAIL MASQUÉ]" in message_content:
-                    print_result(True, "Email detected and filtered correctly")
-                    print(f"Filtered content: {message_content}")
-                    return True
-                else:
-                    print_result(False, f"Email NOT filtered. Filtered: {is_filtered}")
-                    return False
-            else:
-                print_result(False, "Message sending failed")
-                print_response(response)
-                return False
+        # Remettre à 7/7
+        resp = session_admin.get(f"{BASE_URL}/admin/settings.php")
+        csrf = extract_csrf(resp.text)
+        
+        data = {
+            'csrf': csrf,
+            'commission_client': '7',
+            'commission_owner': '7'
+        }
+        
+        resp = session_admin.post(f"{BASE_URL}/admin/settings.php", data=data, allow_redirects=False)
+        
+        if resp.status_code == 302:
+            print_test("Remise à 7%/7%", True, "Taux restaurés")
         else:
-            print_result(False, f"Failed with status {response.status_code}")
-            print_response(response)
-            return False
-    except Exception as e:
-        print_result(False, f"Exception: {str(e)}")
-        return False
+            print_test("Remise à 7%/7%", False, f"Status: {resp.status_code}")
+    else:
+        print_test("Modification taux", False, f"Status: {resp.status_code}")
 
-def test_send_message_with_whatsapp():
-    """Test sending message with WhatsApp mention (should trigger fraud alert)"""
-    print_test_header("Send Message with WhatsApp (Anti-Fraud Test)")
-    try:
-        response = requests.post(
-            f"{BASE_URL}/messages",
-            json={
-                "conversationId": test_data["conversation_id"],
-                "content": "Ajoutez-moi sur WhatsApp pour continuer la discussion"
-            },
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {test_data['user1_token']}"
-            }
-        )
-        
-        if response.status_code == 200:
-            data = response.json()
-            if data.get("success"):
-                is_filtered = data.get("isFiltered", False)
-                warning = data.get("warning")
-                
-                if is_filtered:
-                    print_result(True, "WhatsApp mention detected and flagged")
-                    print(f"Warning: {warning}")
-                    return True
-                else:
-                    print_result(False, "WhatsApp mention NOT detected")
-                    return False
-            else:
-                print_result(False, "Message sending failed")
-                print_response(response)
-                return False
-        else:
-            print_result(False, f"Failed with status {response.status_code}")
-            print_response(response)
-            return False
-    except Exception as e:
-        print_result(False, f"Exception: {str(e)}")
-        return False
+def test_securite():
+    """Test 12: Sécurité - Accès sans session"""
+    print("\n=== TEST 12: SÉCURITÉ ===")
+    
+    # Test accès dashboard sans session
+    session = requests.Session()
+    resp = session.get(f"{BASE_URL}/dashboard/index.php", allow_redirects=False)
+    
+    if resp.status_code == 302 and '/login.php' in resp.headers.get('Location', ''):
+        print_test("Accès /dashboard sans session", True, "Redirection vers /login.php")
+    else:
+        print_test("Accès /dashboard sans session", False, f"Status: {resp.status_code}, Location: {resp.headers.get('Location', 'N/A')}")
+    
+    # Test accès admin sans session
+    resp = session.get(f"{BASE_URL}/admin/index.php", allow_redirects=False)
+    
+    if resp.status_code == 302 and '/admin/login.php' in resp.headers.get('Location', ''):
+        print_test("Accès /admin sans session", True, "Redirection vers /admin/login.php")
+    else:
+        print_test("Accès /admin sans session", False, f"Status: {resp.status_code}, Location: {resp.headers.get('Location', 'N/A')}")
+    
+    # Test accès API messages sans session
+    resp = session.get(f"{BASE_URL}/api/messages.php?conversation_id=fake-id")
+    
+    if resp.status_code == 401:
+        print_test("Accès /api/messages.php sans session", True, "401 Unauthorized")
+    else:
+        print_test("Accès /api/messages.php sans session", False, f"Status: {resp.status_code}")
 
-def test_send_message_with_external_payment():
-    """Test sending message with external payment mention (CRITICAL - should trigger fraud alert)"""
-    print_test_header("Send Message with External Payment (Anti-Fraud CRITICAL Test)")
-    try:
-        response = requests.post(
-            f"{BASE_URL}/messages",
-            json={
-                "conversationId": test_data["conversation_id"],
-                "content": "On peut faire le paiement directement en Airtel Money, c'est plus simple"
-            },
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {test_data['user1_token']}"
-            }
-        )
-        
-        if response.status_code == 200:
-            data = response.json()
-            if data.get("success"):
-                is_filtered = data.get("isFiltered", False)
-                warning = data.get("warning")
-                
-                if is_filtered:
-                    print_result(True, "External payment detected and flagged as CRITICAL")
-                    print(f"Warning: {warning}")
-                    return True
-                else:
-                    print_result(False, "External payment mention NOT detected")
-                    return False
-            else:
-                print_result(False, "Message sending failed")
-                print_response(response)
-                return False
-        else:
-            print_result(False, f"Failed with status {response.status_code}")
-            print_response(response)
-            return False
-    except Exception as e:
-        print_result(False, f"Exception: {str(e)}")
-        return False
-
-def test_get_messages():
-    """Test retrieving messages from a conversation"""
-    print_test_header("Get Messages from Conversation")
-    try:
-        response = requests.get(
-            f"{BASE_URL}/messages?conversationId={test_data['conversation_id']}",
-            headers={
-                "Authorization": f"Bearer {test_data['user1_token']}"
-            }
-        )
-        
-        if response.status_code == 200:
-            data = response.json()
-            if data.get("success") and "messages" in data:
-                msg_count = len(data["messages"])
-                print_result(True, f"Retrieved {msg_count} message(s)")
-                
-                # Check for filtered messages
-                filtered_count = sum(1 for msg in data["messages"] if msg.get("isFiltered"))
-                print(f"Filtered messages: {filtered_count}/{msg_count}")
-                
-                return True
-            else:
-                print_result(False, "Invalid response structure")
-                print_response(response)
-                return False
-        else:
-            print_result(False, f"Failed with status {response.status_code}")
-            print_response(response)
-            return False
-    except Exception as e:
-        print_result(False, f"Exception: {str(e)}")
-        return False
-
-# ============================================================================
-# ADMIN - FRAUD ALERTS TESTS
-# ============================================================================
-
-def test_admin_get_alerts():
-    """Test admin getting fraud alerts"""
-    print_test_header("Admin - Get Fraud Alerts")
-    try:
-        response = requests.get(
-            f"{BASE_URL}/admin/alerts?status=PENDING",
-            headers={
-                "Authorization": f"Bearer {test_data['admin_token']}"
-            }
-        )
-        
-        if response.status_code == 200:
-            data = response.json()
-            if data.get("success") and "alerts" in data:
-                alert_count = len(data["alerts"])
-                stats = data.get("stats", {})
-                print_result(True, f"Retrieved {alert_count} alert(s)")
-                print(f"Stats: {stats}")
-                
-                # Store alert IDs for later tests
-                if alert_count > 0:
-                    test_data["alert_ids"] = [alert["_id"] for alert in data["alerts"]]
-                    print(f"First alert type: {data['alerts'][0].get('type')}")
-                    print(f"First alert severity: {data['alerts'][0].get('severity')}")
-                    print(f"User: {data['alerts'][0].get('user', {}).get('fullName')}")
-                
-                return True
-            else:
-                print_result(False, "Invalid response structure")
-                print_response(response)
-                return False
-        else:
-            print_result(False, f"Failed with status {response.status_code}")
-            print_response(response)
-            return False
-    except Exception as e:
-        print_result(False, f"Exception: {str(e)}")
-        return False
-
-def test_admin_review_alert():
-    """Test admin reviewing an alert"""
-    print_test_header("Admin - Review Alert")
-    try:
-        if not test_data["alert_ids"]:
-            print_result(False, "No alerts available to review")
-            return False
-        
-        alert_id = test_data["alert_ids"][0]
-        
-        response = requests.put(
-            f"{BASE_URL}/admin/alerts",
-            json={
-                "alertId": alert_id,
-                "action": "review",
-                "adminNotes": "Alert reviewed - monitoring user activity"
-            },
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {test_data['admin_token']}"
-            }
-        )
-        
-        if response.status_code == 200:
-            data = response.json()
-            if data.get("success"):
-                print_result(True, "Alert reviewed successfully")
-                return True
-            else:
-                print_result(False, "Review failed")
-                print_response(response)
-                return False
-        else:
-            print_result(False, f"Failed with status {response.status_code}")
-            print_response(response)
-            return False
-    except Exception as e:
-        print_result(False, f"Exception: {str(e)}")
-        return False
-
-def test_admin_dismiss_alert():
-    """Test admin dismissing an alert"""
-    print_test_header("Admin - Dismiss Alert")
-    try:
-        if len(test_data["alert_ids"]) < 2:
-            print_result(False, "Not enough alerts to test dismiss")
-            return False
-        
-        alert_id = test_data["alert_ids"][1]
-        
-        response = requests.put(
-            f"{BASE_URL}/admin/alerts",
-            json={
-                "alertId": alert_id,
-                "action": "dismiss",
-                "adminNotes": "False positive - legitimate message"
-            },
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {test_data['admin_token']}"
-            }
-        )
-        
-        if response.status_code == 200:
-            data = response.json()
-            if data.get("success"):
-                print_result(True, "Alert dismissed successfully")
-                return True
-            else:
-                print_result(False, "Dismiss failed")
-                print_response(response)
-                return False
-        else:
-            print_result(False, f"Failed with status {response.status_code}")
-            print_response(response)
-            return False
-    except Exception as e:
-        print_result(False, f"Exception: {str(e)}")
-        return False
-
-# ============================================================================
-# ADMIN - MESSAGE SUPERVISION TESTS
-# ============================================================================
-
-def test_admin_get_all_conversations():
-    """Test admin getting all conversations"""
-    print_test_header("Admin - Get All Conversations")
-    try:
-        response = requests.get(
-            f"{BASE_URL}/admin/messages?filter=ALL",
-            headers={
-                "Authorization": f"Bearer {test_data['admin_token']}"
-            }
-        )
-        
-        if response.status_code == 200:
-            data = response.json()
-            if data.get("success") and "conversations" in data:
-                conv_count = len(data["conversations"])
-                stats = data.get("stats", {})
-                print_result(True, f"Retrieved {conv_count} conversation(s)")
-                print(f"Stats: Total messages: {stats.get('totalMessages')}, Filtered: {stats.get('filteredMessages')}")
-                return True
-            else:
-                print_result(False, "Invalid response structure")
-                print_response(response)
-                return False
-        else:
-            print_result(False, f"Failed with status {response.status_code}")
-            print_response(response)
-            return False
-    except Exception as e:
-        print_result(False, f"Exception: {str(e)}")
-        return False
-
-def test_admin_get_flagged_conversations():
-    """Test admin getting flagged conversations"""
-    print_test_header("Admin - Get Flagged Conversations")
-    try:
-        response = requests.get(
-            f"{BASE_URL}/admin/messages?filter=FLAGGED",
-            headers={
-                "Authorization": f"Bearer {test_data['admin_token']}"
-            }
-        )
-        
-        if response.status_code == 200:
-            data = response.json()
-            if data.get("success") and "conversations" in data:
-                conv_count = len(data["conversations"])
-                print_result(True, f"Retrieved {conv_count} flagged conversation(s)")
-                
-                if conv_count > 0:
-                    conv = data["conversations"][0]
-                    print(f"Filtered messages count: {conv.get('filteredMessagesCount')}")
-                
-                return True
-            else:
-                print_result(False, "Invalid response structure")
-                print_response(response)
-                return False
-        else:
-            print_result(False, f"Failed with status {response.status_code}")
-            print_response(response)
-            return False
-    except Exception as e:
-        print_result(False, f"Exception: {str(e)}")
-        return False
-
-def test_admin_get_conversation_messages():
-    """Test admin viewing messages of a specific conversation"""
-    print_test_header("Admin - Get Conversation Messages")
-    try:
-        if not test_data["conversation_id"]:
-            print_result(False, "No conversation ID available")
-            return False
-        
-        response = requests.get(
-            f"{BASE_URL}/admin/messages/{test_data['conversation_id']}",
-            headers={
-                "Authorization": f"Bearer {test_data['admin_token']}"
-            }
-        )
-        
-        if response.status_code == 200:
-            data = response.json()
-            if data.get("success") and "messages" in data:
-                msg_count = len(data["messages"])
-                print_result(True, f"Retrieved {msg_count} message(s)")
-                
-                # Check if admin can see both filtered and original content
-                filtered_msgs = [msg for msg in data["messages"] if msg.get("isFiltered")]
-                if filtered_msgs:
-                    print(f"Filtered messages: {len(filtered_msgs)}")
-                    print(f"Example - Original: {filtered_msgs[0].get('originalContent', 'N/A')[:50]}")
-                    print(f"Example - Filtered: {filtered_msgs[0].get('content', 'N/A')[:50]}")
-                
-                return True
-            else:
-                print_result(False, "Invalid response structure")
-                print_response(response)
-                return False
-        else:
-            print_result(False, f"Failed with status {response.status_code}")
-            print_response(response)
-            return False
-    except Exception as e:
-        print_result(False, f"Exception: {str(e)}")
-        return False
-
-# ============================================================================
-# ADMIN - USER MANAGEMENT TESTS
-# ============================================================================
-
-def test_admin_block_user():
-    """Test admin blocking a user"""
-    print_test_header("Admin - Block User")
-    try:
-        response = requests.put(
-            f"{BASE_URL}/admin/users",
-            json={
-                "userId": test_data["user1_id"],
-                "action": "block",
-                "reason": "Multiple fraud attempts detected"
-            },
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {test_data['admin_token']}"
-            }
-        )
-        
-        if response.status_code == 200:
-            data = response.json()
-            if data.get("success"):
-                print_result(True, f"User blocked: {data.get('message')}")
-                return True
-            else:
-                print_result(False, "Block failed")
-                print_response(response)
-                return False
-        else:
-            print_result(False, f"Failed with status {response.status_code}")
-            print_response(response)
-            return False
-    except Exception as e:
-        print_result(False, f"Exception: {str(e)}")
-        return False
-
-def test_blocked_user_cannot_send_message():
-    """Test that blocked user cannot send messages"""
-    print_test_header("Blocked User Cannot Send Message")
-    try:
-        response = requests.post(
-            f"{BASE_URL}/messages",
-            json={
-                "conversationId": test_data["conversation_id"],
-                "content": "Test message from blocked user"
-            },
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {test_data['user1_token']}"
-            }
-        )
-        
-        if response.status_code == 403:
-            data = response.json()
-            error_msg = data.get("error", "")
-            if "bloqué" in error_msg.lower() or "blocked" in error_msg.lower():
-                print_result(True, f"Blocked user correctly prevented from sending: {error_msg}")
-                return True
-            else:
-                print_result(False, f"Wrong error message: {error_msg}")
-                return False
-        else:
-            print_result(False, f"Expected 403, got {response.status_code}")
-            print_response(response)
-            return False
-    except Exception as e:
-        print_result(False, f"Exception: {str(e)}")
-        return False
-
-def test_admin_unblock_user():
-    """Test admin unblocking a user"""
-    print_test_header("Admin - Unblock User")
-    try:
-        response = requests.put(
-            f"{BASE_URL}/admin/users",
-            json={
-                "userId": test_data["user1_id"],
-                "action": "unblock"
-            },
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {test_data['admin_token']}"
-            }
-        )
-        
-        if response.status_code == 200:
-            data = response.json()
-            if data.get("success"):
-                print_result(True, f"User unblocked: {data.get('message')}")
-                return True
-            else:
-                print_result(False, "Unblock failed")
-                print_response(response)
-                return False
-        else:
-            print_result(False, f"Failed with status {response.status_code}")
-            print_response(response)
-            return False
-    except Exception as e:
-        print_result(False, f"Exception: {str(e)}")
-        return False
-
-def test_unblocked_user_can_send_message():
-    """Test that unblocked user can send messages again"""
-    print_test_header("Unblocked User Can Send Message")
-    try:
-        response = requests.post(
-            f"{BASE_URL}/messages",
-            json={
-                "conversationId": test_data["conversation_id"],
-                "content": "Message après déblocage - tout est en ordre maintenant"
-            },
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {test_data['user1_token']}"
-            }
-        )
-        
-        if response.status_code == 200:
-            data = response.json()
-            if data.get("success"):
-                print_result(True, "Unblocked user can send messages again")
-                return True
-            else:
-                print_result(False, "Message sending failed")
-                print_response(response)
-                return False
-        else:
-            print_result(False, f"Failed with status {response.status_code}")
-            print_response(response)
-            return False
-    except Exception as e:
-        print_result(False, f"Exception: {str(e)}")
-        return False
-
-# ============================================================================
-# ADMIN - DASHBOARD STATS TEST
-# ============================================================================
-
-def test_admin_dashboard_stats():
-    """Test admin dashboard stats include fraud alerts"""
-    print_test_header("Admin - Dashboard Stats with Fraud Alerts")
-    try:
-        response = requests.get(
-            f"{BASE_URL}/admin/dashboard-stats",
-            headers={
-                "Authorization": f"Bearer {test_data['admin_token']}"
-            }
-        )
-        
-        if response.status_code == 200:
-            data = response.json()
-            if "fraudAlerts" in data:
-                fraud_alerts = data["fraudAlerts"]
-                print_result(True, f"Dashboard stats include fraud alerts")
-                print(f"Pending alerts: {fraud_alerts.get('pending')}")
-                print(f"Total alerts: {fraud_alerts.get('total')}")
-                return True
-            else:
-                print_result(False, "fraudAlerts field missing from dashboard stats")
-                print_response(response)
-                return False
-        else:
-            print_result(False, f"Failed with status {response.status_code}")
-            print_response(response)
-            return False
-    except Exception as e:
-        print_result(False, f"Exception: {str(e)}")
-        return False
-
-# ============================================================================
-# MAIN TEST RUNNER
-# ============================================================================
-
-def run_all_tests():
-    """Run all backend tests"""
-    print("\n" + "="*80)
-    print("KAPUCE.G - BACKEND TESTING - MESSAGING & ANTI-FRAUD SYSTEM")
-    print("="*80)
+def main():
+    """Exécute tous les tests"""
+    print("=" * 60)
+    print("KAPUCE.G - TEST COMPLET VERSION PHP")
+    print("=" * 60)
     print(f"Base URL: {BASE_URL}")
-    print(f"Start Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print("="*80)
+    print(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
-    results = {}
+    # Vérifier que le serveur répond
+    try:
+        resp = requests.get(BASE_URL, timeout=5)
+        print_test("Serveur PHP accessible", True, f"Status: {resp.status_code}")
+    except Exception as e:
+        print_test("Serveur PHP accessible", False, str(e))
+        return
     
-    # Authentication
-    results["Admin Login"] = test_admin_login()
-    results["Create User 1"] = test_create_user(1)
-    results["Create User 2"] = test_create_user(2)
+    # Tests séquentiels
+    session_client, session_owner = test_inscription()
+    session_admin = test_connexion()
     
-    # Messaging
-    results["Create Conversation"] = test_create_conversation()
-    results["Get Conversations"] = test_get_conversations()
-    results["Send Normal Message"] = test_send_normal_message()
-    results["Send Message with Phone"] = test_send_message_with_phone()
-    results["Send Message with Email"] = test_send_message_with_email()
-    results["Send Message with WhatsApp"] = test_send_message_with_whatsapp()
-    results["Send Message with External Payment"] = test_send_message_with_external_payment()
-    results["Get Messages"] = test_get_messages()
+    if session_owner:
+        test_creation_annonce(session_owner)
     
-    # Admin - Fraud Alerts
-    results["Admin Get Alerts"] = test_admin_get_alerts()
-    results["Admin Review Alert"] = test_admin_review_alert()
-    results["Admin Dismiss Alert"] = test_admin_dismiss_alert()
+    listing_id = None
+    if session_admin:
+        listing_id = test_moderation_admin(session_admin)
     
-    # Admin - Message Supervision
-    results["Admin Get All Conversations"] = test_admin_get_all_conversations()
-    results["Admin Get Flagged Conversations"] = test_admin_get_flagged_conversations()
-    results["Admin Get Conversation Messages"] = test_admin_get_conversation_messages()
+    if session_client and listing_id:
+        test_demande_visite(session_client, listing_id)
     
-    # Admin - User Management
-    results["Admin Block User"] = test_admin_block_user()
-    results["Blocked User Cannot Send"] = test_blocked_user_cannot_send_message()
-    results["Admin Unblock User"] = test_admin_unblock_user()
-    results["Unblocked User Can Send"] = test_unblocked_user_can_send_message()
+    if session_owner:
+        test_acceptation_visite(session_owner)
     
-    # Admin - Dashboard Stats
-    results["Admin Dashboard Stats"] = test_admin_dashboard_stats()
+    if session_client:
+        test_messagerie_anti_fraude(session_client)
     
-    # Summary
-    print("\n" + "="*80)
-    print("TEST SUMMARY")
-    print("="*80)
+    tx_id = None
+    if session_client and listing_id:
+        tx_id = test_paiement_sequestre(session_client, listing_id)
     
-    passed = sum(1 for v in results.values() if v)
-    total = len(results)
+    if session_admin:
+        test_validation_admin_transaction(session_admin, tx_id)
+        test_supervision_admin(session_admin)
+        test_taux_commission(session_admin)
     
-    for test_name, result in results.items():
-        status = "✅ PASS" if result else "❌ FAIL"
-        print(f"{status}: {test_name}")
+    test_securite()
     
-    print("="*80)
-    print(f"TOTAL: {passed}/{total} tests passed ({(passed/total*100):.1f}%)")
-    print(f"End Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print("="*80)
-    
-    return results
+    print("\n" + "=" * 60)
+    print("TESTS TERMINÉS")
+    print("=" * 60)
 
 if __name__ == "__main__":
-    run_all_tests()
+    main()

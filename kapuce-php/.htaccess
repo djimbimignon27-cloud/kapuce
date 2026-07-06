@@ -1,0 +1,14 @@
+# KAPUCE.G - Configuration Apache (LWS)
+Options -Indexes
+DirectoryIndex index.php
+
+# Protéger les fichiers sensibles
+<FilesMatch "^(config\.php)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Limites d'upload (photos/vidéos)
+php_value upload_max_filesize 100M
+php_value post_max_size 120M
+php_value max_execution_time 300
