@@ -248,3 +248,17 @@ function listing_first_image($listing) {
     if (!empty($images[0]['url'])) return $images[0]['url'];
     return 'https://res.cloudinary.com/demo/image/upload/w_600,h_400,c_fill/sample.jpg';
 }
+
+// Note moyenne et nombre d'avis d'un utilisateur
+function user_rating($userId) {
+    $stmt = db()->prepare('SELECT COALESCE(AVG(rating), 0) AS avg_rating, COUNT(*) AS count FROM reviews WHERE reviewed_id = ?');
+    $stmt->execute([$userId]);
+    $r = $stmt->fetch();
+    return ['avg' => round((float)$r['avg_rating'], 1), 'count' => (int)$r['count']];
+}
+
+// Affichage HTML des étoiles (ex: 4.2 -> ★★★★☆)
+function stars_html($avg) {
+    $full = (int)round($avg);
+    return '<span class="text-amber-400">' . str_repeat('★', $full) . '</span><span class="text-gray-300">' . str_repeat('★', 5 - $full) . '</span>';
+}

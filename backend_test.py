@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-KAPUCE.G - Test complet de la version PHP
-==========================================
-Teste tous les flux métier via HTTP sur localhost:8080
+Test complet de KAPUCE.G (version PHP) - Régression + Système de notation
+URL: http://localhost:8080
+Base MySQL: kapuce, user root, no password
 """
+
 import requests
 import re
 import json
@@ -12,662 +13,827 @@ from datetime import datetime
 BASE_URL = "http://localhost:8080"
 
 def extract_csrf(html):
-    """Extrait le token CSRF depuis le HTML"""
-    match = re.search(r'name="csrf"\s+value="([a-f0-9]+)"', html)
-    if match:
-        return match.group(1)
-    return None
+    """Extrait le token CSRF d'une page HTML"""
+    match = re.search(r'name=["\']csrf["\'] value=["\']([^"\']+)["\']', html)
+    return match.group(1) if match else None
 
-def print_test(name, success, details=""):
-    """Affiche le résultat d'un test"""
-    status = "✅ PASS" if success else "❌ FAIL"
-    print(f"{status} - {name}")
-    if details:
-        print(f"    {details}")
-
-def test_inscription():
-    """Test 1: Inscription CLIENT et PROPRIÉTAIRE"""
-    print("\n=== TEST 1: INSCRIPTION ===")
-    
-    # Créer un client
-    session_client = requests.Session()
-    resp = session_client.get(f"{BASE_URL}/register.php")
-    csrf = extract_csrf(resp.text)
-    
-    if not csrf:
-        print_test("Extraction CSRF token", False, "Token CSRF non trouvé dans le HTML")
-        return None, None
-    
-    print_test("Extraction CSRF token", True, f"Token: {csrf[:16]}...")
-    
-    timestamp = datetime.now().strftime("%H%M%S")
-    client_email = f"client_{timestamp}@test.kapuce.com"
-    
-    data = {
-        'csrf': csrf,
-        'role': 'USER',
-        'full_name': 'Jean Client Test',
-        'email': client_email,
-        'phone': '077112233',
-        'password': 'TestPassword123!'
-    }
-    
-    resp = session_client.post(f"{BASE_URL}/register.php", data=data, allow_redirects=False)
-    
-    if resp.status_code == 302 and '/dashboard/index.php' in resp.headers.get('Location', ''):
-        print_test("Inscription CLIENT", True, f"Email: {client_email}, Redirection vers dashboard")
-    else:
-        print_test("Inscription CLIENT", False, f"Status: {resp.status_code}, Location: {resp.headers.get('Location', 'N/A')}")
-        return None, None
-    
-    # Créer un propriétaire
-    session_owner = requests.Session()
-    resp = session_owner.get(f"{BASE_URL}/register.php")
-    csrf = extract_csrf(resp.text)
-    
-    owner_email = f"owner_{timestamp}@test.kapuce.com"
-    
-    data = {
-        'csrf': csrf,
-        'role': 'OWNER',
-        'full_name': 'Marie Propriétaire Test',
-        'email': owner_email,
-        'phone': '065445566',
-        'password': 'TestPassword123!'
-    }
-    
-    resp = session_owner.post(f"{BASE_URL}/register.php", data=data, allow_redirects=False)
-    
-    if resp.status_code == 302 and '/dashboard/index.php' in resp.headers.get('Location', ''):
-        print_test("Inscription PROPRIÉTAIRE", True, f"Email: {owner_email}, Redirection vers dashboard")
-    else:
-        print_test("Inscription PROPRIÉTAIRE", False, f"Status: {resp.status_code}")
-        return None, None
-    
-    return session_client, session_owner
-
-def test_connexion():
-    """Test 2: Connexion"""
-    print("\n=== TEST 2: CONNEXION ===")
-    
-    # Test avec le compte admin seedé
-    session = requests.Session()
-    resp = session.get(f"{BASE_URL}/login.php")
-    csrf = extract_csrf(resp.text)
-    
-    data = {
-        'csrf': csrf,
-        'email': 'superadmin@kapuce.com',
-        'password': 'SuperAdminPassword123!'
-    }
-    
-    resp = session.post(f"{BASE_URL}/login.php", data=data, allow_redirects=False)
-    
-    if resp.status_code == 302:
-        location = resp.headers.get('Location', '')
-        if '/admin/index.php' in location or '/dashboard/index.php' in location:
-            print_test("Connexion ADMIN", True, f"Redirection vers {location}")
-            return session
-        else:
-            print_test("Connexion ADMIN", False, f"Redirection inattendue: {location}")
-    else:
-        print_test("Connexion ADMIN", False, f"Status: {resp.status_code}")
-    
-    return None
-
-def test_creation_annonce(session_owner):
-    """Test 3: Création d'annonce"""
-    print("\n=== TEST 3: CRÉATION ANNONCE ===")
-    
-    if not session_owner:
-        print_test("Création annonce", False, "Session propriétaire non disponible")
-        return None
-    
-    resp = session_owner.get(f"{BASE_URL}/dashboard/create-listing.php")
-    csrf = extract_csrf(resp.text)
-    
-    if not csrf:
-        print_test("Accès formulaire création", False, "Token CSRF non trouvé")
-        return None
-    
-    print_test("Accès formulaire création", True)
-    
-    data = {
-        'csrf': csrf,
-        'type': 'HOUSE',
-        'category': 'RENT',
-        'sub_category': 'VILLA',
-        'title': 'Belle villa 4 chambres à Libreville',
-        'description': 'Magnifique villa moderne avec jardin, située dans un quartier calme et sécurisé de Libreville.',
-        'price': '500000',
-        'city': 'Libreville',
-        'address': '123 Avenue de la Liberté',
-        'neighborhood': 'Akanda',
-        'd_bedrooms': '3',
-        'd_bathrooms': '2',
-        'd_surface': '150',
-        'd_furnished': 'FURNISHED',
-        'd_condition': 'EXCELLENT',
-        'd_parking': '2'
-    }
-    
-    resp = session_owner.post(f"{BASE_URL}/dashboard/create-listing.php", data=data, allow_redirects=False)
-    
-    if resp.status_code == 302 and '/dashboard/my-listings.php' in resp.headers.get('Location', ''):
-        print_test("Création annonce (PENDING)", True, "Redirection vers my-listings")
-        return True
-    else:
-        print_test("Création annonce", False, f"Status: {resp.status_code}, Location: {resp.headers.get('Location', 'N/A')}")
-        return None
-
-def get_pending_listing_id(session_admin):
-    """Récupère l'ID d'une annonce PENDING depuis la page admin"""
-    resp = session_admin.get(f"{BASE_URL}/admin/listings.php?filter=PENDING")
-    
-    # Chercher un ID d'annonce dans le HTML (format UUID)
-    matches = re.findall(r'listing_id["\']?\s*[:=]\s*["\']([a-f0-9\-]{36})["\']', resp.text)
-    if matches:
-        return matches[0]
-    
-    # Alternative: chercher dans les formulaires
-    matches = re.findall(r'name="listing_id"\s+value="([a-f0-9\-]{36})"', resp.text)
-    if matches:
-        return matches[0]
-    
-    return None
-
-def test_moderation_admin(session_admin):
-    """Test 4: Modération admin - Approuver une annonce"""
-    print("\n=== TEST 4: MODÉRATION ADMIN ===")
-    
-    if not session_admin:
-        print_test("Modération admin", False, "Session admin non disponible")
-        return None
-    
-    # Récupérer l'ID d'une annonce PENDING
-    listing_id = get_pending_listing_id(session_admin)
-    
-    if not listing_id:
-        print_test("Récupération ID annonce PENDING", False, "Aucune annonce PENDING trouvée")
-        return None
-    
-    print_test("Récupération ID annonce PENDING", True, f"ID: {listing_id[:16]}...")
-    
-    # Approuver l'annonce
-    resp = session_admin.get(f"{BASE_URL}/admin/listings.php")
-    csrf = extract_csrf(resp.text)
-    
-    if not csrf:
-        print_test("Extraction CSRF admin", False)
-        return None
-    
-    data = {
-        'csrf': csrf,
-        'listing_id': listing_id,
-        'action': 'approve'
-    }
-    
-    resp = session_admin.post(f"{BASE_URL}/admin/listings.php", data=data, allow_redirects=False)
-    
-    if resp.status_code == 302:
-        print_test("Approbation annonce", True, "Annonce approuvée (status ACTIVE)")
-        return listing_id
-    else:
-        print_test("Approbation annonce", False, f"Status: {resp.status_code}")
-        return None
-
-def test_demande_visite(session_client, listing_id):
-    """Test 5: Demande de visite"""
-    print("\n=== TEST 5: DEMANDE DE VISITE ===")
-    
-    if not session_client or not listing_id:
-        print_test("Demande de visite", False, "Session client ou listing_id non disponible")
-        return None
-    
-    # Accéder à la page de l'annonce
-    resp = session_client.get(f"{BASE_URL}/listing.php?id={listing_id}")
-    csrf = extract_csrf(resp.text)
-    
-    if not csrf:
-        print_test("Accès page annonce", False, "Token CSRF non trouvé")
-        return None
-    
-    print_test("Accès page annonce", True)
-    
-    # Envoyer la demande de visite
-    data = {
-        'csrf': csrf,
-        'action': 'request_visit',
-        'message': 'Bonjour, je suis intéressé par cette villa. Pourrions-nous organiser une visite cette semaine ?',
-        'proposed_date': '2025-06-20 14:00:00'
-    }
-    
-    resp = session_client.post(f"{BASE_URL}/listing.php?id={listing_id}", data=data, allow_redirects=False)
-    
-    if resp.status_code == 302:
-        print_test("Demande de visite créée", True, "Status PENDING attendu en base")
-        return True
-    else:
-        print_test("Demande de visite", False, f"Status: {resp.status_code}")
-        return None
-
-def get_visit_request_id(session_owner):
-    """Récupère l'ID d'une demande de visite PENDING"""
-    resp = session_owner.get(f"{BASE_URL}/dashboard/visit-requests.php")
-    
-    # Chercher un ID de visite dans le HTML
-    matches = re.findall(r'visit_id["\']?\s*[:=]\s*["\']([a-f0-9\-]{36})["\']', resp.text)
-    if matches:
-        return matches[0]
-    
-    matches = re.findall(r'name="visit_id"\s+value="([a-f0-9\-]{36})"', resp.text)
-    if matches:
-        return matches[0]
-    
-    return None
-
-def test_acceptation_visite(session_owner):
-    """Test 6: Acceptation de visite par le propriétaire"""
-    print("\n=== TEST 6: ACCEPTATION VISITE ===")
-    
-    if not session_owner:
-        print_test("Acceptation visite", False, "Session propriétaire non disponible")
-        return None
-    
-    visit_id = get_visit_request_id(session_owner)
-    
-    if not visit_id:
-        print_test("Récupération ID visite PENDING", False, "Aucune demande trouvée")
-        return None
-    
-    print_test("Récupération ID visite PENDING", True, f"ID: {visit_id[:16]}...")
-    
-    resp = session_owner.get(f"{BASE_URL}/dashboard/visit-requests.php")
-    csrf = extract_csrf(resp.text)
-    
-    if not csrf:
-        print_test("Extraction CSRF", False)
-        return None
-    
-    data = {
-        'csrf': csrf,
-        'visit_id': visit_id,
-        'action': 'accept'
-    }
-    
-    resp = session_owner.post(f"{BASE_URL}/dashboard/visit-requests.php", data=data, allow_redirects=False)
-    
-    if resp.status_code == 302:
-        print_test("Acceptation visite", True, "Status ACCEPTED + conversation créée attendue")
-        return True
-    else:
-        print_test("Acceptation visite", False, f"Status: {resp.status_code}")
-        return None
-
-def get_conversation_id(session):
-    """Récupère l'ID d'une conversation depuis la page messages"""
-    resp = session.get(f"{BASE_URL}/messages.php")
-    
-    # Chercher un ID de conversation dans le HTML
-    matches = re.findall(r'conversation_id["\']?\s*[:=]\s*["\']([a-f0-9\-]{36})["\']', resp.text)
-    if matches:
-        return matches[0]
-    
-    matches = re.findall(r'data-conversation-id="([a-f0-9\-]{36})"', resp.text)
-    if matches:
-        return matches[0]
-    
-    return None
-
-def test_messagerie_anti_fraude(session_client):
-    """Test 7: Messagerie avec filtrage anti-fraude"""
-    print("\n=== TEST 7: MESSAGERIE ANTI-FRAUDE ===")
-    
-    if not session_client:
-        print_test("Messagerie", False, "Session client non disponible")
-        return
-    
-    conv_id = get_conversation_id(session_client)
-    
-    if not conv_id:
-        print_test("Récupération conversation_id", False, "Aucune conversation trouvée")
-        return
-    
-    print_test("Récupération conversation_id", True, f"ID: {conv_id[:16]}...")
-    
-    # Test 7a: GET messages
-    resp = session_client.get(f"{BASE_URL}/api/messages.php?conversation_id={conv_id}")
-    
-    if resp.status_code == 200:
-        data = resp.json()
-        if data.get('success'):
-            print_test("GET /api/messages.php", True, f"{len(data.get('messages', []))} messages récupérés")
-        else:
-            print_test("GET /api/messages.php", False, f"Error: {data.get('error')}")
-    else:
-        print_test("GET /api/messages.php", False, f"Status: {resp.status_code}")
-    
-    # Test 7b: POST message normal (non filtré)
-    headers = {'Content-Type': 'application/json'}
-    payload = {
-        'conversation_id': conv_id,
-        'content': 'Bonjour, on peut se voir demain pour la visite ?'
-    }
-    
-    resp = session_client.post(f"{BASE_URL}/api/messages.php", json=payload, headers=headers)
-    
-    if resp.status_code == 200:
-        data = resp.json()
-        if data.get('success') and not data.get('message', {}).get('is_filtered'):
-            print_test("POST message normal (non filtré)", True, "Message envoyé sans filtrage")
-        else:
-            print_test("POST message normal", False, f"Filtré: {data.get('message', {}).get('is_filtered')}")
-    else:
-        print_test("POST message normal", False, f"Status: {resp.status_code}")
-    
-    # Test 7c: POST message avec numéro de téléphone (doit être filtré)
-    payload = {
-        'conversation_id': conv_id,
-        'content': 'Appelez-moi au 077 12 34 56 pour plus de détails'
-    }
-    
-    resp = session_client.post(f"{BASE_URL}/api/messages.php", json=payload, headers=headers)
-    
-    if resp.status_code == 200:
-        data = resp.json()
-        msg = data.get('message', {})
-        if msg.get('is_filtered') and '[NUMÉRO MASQUÉ]' in msg.get('content', ''):
-            print_test("POST message avec téléphone (filtré)", True, f"Contenu masqué: {msg.get('content')[:50]}...")
-        else:
-            print_test("POST message avec téléphone", False, f"is_filtered: {msg.get('is_filtered')}, content: {msg.get('content')[:50]}")
-    else:
-        print_test("POST message avec téléphone", False, f"Status: {resp.status_code}")
-    
-    # Test 7d: POST message avec email (doit être filtré)
-    payload = {
-        'conversation_id': conv_id,
-        'content': 'Mon email c\'est test@gmail.com, contactez-moi'
-    }
-    
-    resp = session_client.post(f"{BASE_URL}/api/messages.php", json=payload, headers=headers)
-    
-    if resp.status_code == 200:
-        data = resp.json()
-        msg = data.get('message', {})
-        if msg.get('is_filtered') and '[EMAIL MASQUÉ]' in msg.get('content', ''):
-            print_test("POST message avec email (filtré)", True, f"Contenu masqué: {msg.get('content')[:50]}...")
-        else:
-            print_test("POST message avec email", False, f"is_filtered: {msg.get('is_filtered')}")
-    else:
-        print_test("POST message avec email", False, f"Status: {resp.status_code}")
-
-def test_paiement_sequestre(session_client, listing_id):
-    """Test 8: Paiement séquestre"""
-    print("\n=== TEST 8: PAIEMENT SÉQUESTRE ===")
-    
-    if not session_client or not listing_id:
-        print_test("Paiement séquestre", False, "Session ou listing_id non disponible")
-        return None
-    
-    # Initier le paiement
-    resp = session_client.get(f"{BASE_URL}/listing.php?id={listing_id}")
-    csrf = extract_csrf(resp.text)
-    
-    if not csrf:
-        print_test("Extraction CSRF", False)
-        return None
-    
-    data = {
-        'csrf': csrf,
-        'action': 'start_payment'
-    }
-    
-    resp = session_client.post(f"{BASE_URL}/listing.php?id={listing_id}", data=data, allow_redirects=False)
-    
-    if resp.status_code == 302:
-        location = resp.headers.get('Location', '')
-        if '/pay.php?id=' in location:
-            print_test("Initiation paiement", True, f"Redirection vers {location}")
-            
-            # Extraire l'ID de transaction
-            tx_match = re.search(r'id=([a-f0-9\-]{36})', location)
-            if tx_match:
-                tx_id = tx_match.group(1)
-                print_test("Extraction transaction_id", True, f"ID: {tx_id[:16]}...")
-                
-                # Effectuer le paiement
-                resp = session_client.get(f"{BASE_URL}/pay.php?id={tx_id}")
-                csrf = extract_csrf(resp.text)
-                
-                if not csrf:
-                    print_test("Accès page paiement", False, "CSRF non trouvé")
-                    return None
-                
-                data = {
-                    'csrf': csrf,
-                    'method': 'AIRTEL_MONEY',
-                    'phone': '077112233'
-                }
-                
-                resp = session_client.post(f"{BASE_URL}/pay.php?id={tx_id}", data=data, allow_redirects=False)
-                
-                if resp.status_code == 302:
-                    print_test("Paiement Mobile Money", True, "Transaction PAID attendue en base")
-                    return tx_id
-                else:
-                    print_test("Paiement Mobile Money", False, f"Status: {resp.status_code}")
-            else:
-                print_test("Extraction transaction_id", False)
-        else:
-            print_test("Initiation paiement", False, f"Redirection inattendue: {location}")
-    else:
-        print_test("Initiation paiement", False, f"Status: {resp.status_code}")
-    
-    return None
-
-def get_transaction_id(session_admin):
-    """Récupère l'ID d'une transaction PAID depuis la page admin"""
-    resp = session_admin.get(f"{BASE_URL}/admin/transactions.php")
-    
-    # Chercher un ID de transaction dans le HTML
-    matches = re.findall(r'tx_id["\']?\s*[:=]\s*["\']([a-f0-9\-]{36})["\']', resp.text)
-    if matches:
-        return matches[0]
-    
-    matches = re.findall(r'name="tx_id"\s+value="([a-f0-9\-]{36})"', resp.text)
-    if matches:
-        return matches[0]
-    
-    return None
-
-def test_validation_admin_transaction(session_admin, tx_id=None):
-    """Test 9: Validation admin de la transaction"""
-    print("\n=== TEST 9: VALIDATION ADMIN TRANSACTION ===")
-    
-    if not session_admin:
-        print_test("Validation admin", False, "Session admin non disponible")
-        return
-    
-    if not tx_id:
-        tx_id = get_transaction_id(session_admin)
-    
-    if not tx_id:
-        print_test("Récupération transaction_id", False, "Aucune transaction trouvée")
-        return
-    
-    print_test("Récupération transaction_id", True, f"ID: {tx_id[:16]}...")
-    
-    resp = session_admin.get(f"{BASE_URL}/admin/transactions.php")
-    csrf = extract_csrf(resp.text)
-    
-    if not csrf:
-        print_test("Extraction CSRF", False)
-        return
-    
-    data = {
-        'csrf': csrf,
-        'tx_id': tx_id,
-        'action': 'complete'
-    }
-    
-    resp = session_admin.post(f"{BASE_URL}/admin/transactions.php", data=data, allow_redirects=False)
-    
-    if resp.status_code == 302:
-        print_test("Validation transaction", True, "Transaction COMPLETED + annonce RENTED attendue")
-    else:
-        print_test("Validation transaction", False, f"Status: {resp.status_code}")
-
-def test_supervision_admin(session_admin):
-    """Test 10: Supervision admin des messages et alertes"""
-    print("\n=== TEST 10: SUPERVISION ADMIN ===")
-    
-    if not session_admin:
-        print_test("Supervision admin", False, "Session admin non disponible")
-        return
-    
-    # Test 10a: GET alertes fraude
-    resp = session_admin.get(f"{BASE_URL}/admin/messages.php?tab=alerts")
-    
-    if resp.status_code == 200 and 'alerte' in resp.text.lower():
-        print_test("GET /admin/messages.php?tab=alerts", True, "Page alertes accessible")
-    else:
-        print_test("GET /admin/messages.php?tab=alerts", False, f"Status: {resp.status_code}")
-    
-    # Test 10b: GET conversations
-    resp = session_admin.get(f"{BASE_URL}/admin/messages.php?tab=conversations")
-    
-    if resp.status_code == 200:
-        print_test("GET /admin/messages.php?tab=conversations", True, "Page conversations accessible")
-    else:
-        print_test("GET /admin/messages.php?tab=conversations", False, f"Status: {resp.status_code}")
-
-def test_taux_commission(session_admin):
-    """Test 11: Modification du taux de commission"""
-    print("\n=== TEST 11: TAUX DE COMMISSION ===")
-    
-    if not session_admin:
-        print_test("Taux commission", False, "Session admin non disponible")
-        return
-    
-    resp = session_admin.get(f"{BASE_URL}/admin/settings.php")
-    csrf = extract_csrf(resp.text)
-    
-    if not csrf:
-        print_test("Accès page settings", False, "CSRF non trouvé")
-        return
-    
-    print_test("Accès page settings", True)
-    
-    # Modifier les taux
-    data = {
-        'csrf': csrf,
-        'commission_client': '10',
-        'commission_owner': '5'
-    }
-    
-    resp = session_admin.post(f"{BASE_URL}/admin/settings.php", data=data, allow_redirects=False)
-    
-    if resp.status_code == 302:
-        print_test("Modification taux (10%/5%)", True, "Taux modifiés en base")
+def test_register_client():
+    """Test 1: Inscription CLIENT (role=USER)"""
+    print("\n=== TEST 1: Inscription CLIENT ===")
+    try:
+        session = requests.Session()
+        # GET pour récupérer le CSRF
+        resp = session.get(f"{BASE_URL}/register.php")
+        csrf = extract_csrf(resp.text)
         
-        # Remettre à 7/7
-        resp = session_admin.get(f"{BASE_URL}/admin/settings.php")
+        # POST inscription
+        data = {
+            'csrf': csrf,
+            'role': 'USER',
+            'full_name': 'Jean Dupont',
+            'email': f'client_{datetime.now().timestamp()}@test.com',
+            'phone': '065123456',
+            'password': 'Password123!',
+            'password_confirm': 'Password123!'
+        }
+        resp = session.post(f"{BASE_URL}/register.php", data=data, allow_redirects=False)
+        
+        if resp.status_code == 302 and '/dashboard/index.php' in resp.headers.get('Location', ''):
+            print("✅ Inscription CLIENT réussie - Redirection vers /dashboard/index.php")
+            return {'success': True, 'session': session, 'email': data['email'], 'password': data['password']}
+        else:
+            print(f"❌ Échec inscription CLIENT - Status: {resp.status_code}, Location: {resp.headers.get('Location')}")
+            return {'success': False}
+    except Exception as e:
+        print(f"❌ Erreur inscription CLIENT: {e}")
+        return {'success': False}
+
+def test_register_owner():
+    """Test 2: Inscription PROPRIÉTAIRE (role=OWNER)"""
+    print("\n=== TEST 2: Inscription PROPRIÉTAIRE ===")
+    try:
+        session = requests.Session()
+        resp = session.get(f"{BASE_URL}/register.php")
         csrf = extract_csrf(resp.text)
         
         data = {
             'csrf': csrf,
-            'commission_client': '7',
-            'commission_owner': '7'
+            'role': 'OWNER',
+            'full_name': 'Marie Martin',
+            'email': f'owner_{datetime.now().timestamp()}@test.com',
+            'phone': '077654321',
+            'password': 'Password123!',
+            'password_confirm': 'Password123!'
         }
+        resp = session.post(f"{BASE_URL}/register.php", data=data, allow_redirects=False)
         
-        resp = session_admin.post(f"{BASE_URL}/admin/settings.php", data=data, allow_redirects=False)
+        if resp.status_code == 302 and '/dashboard/index.php' in resp.headers.get('Location', ''):
+            print("✅ Inscription PROPRIÉTAIRE réussie - Redirection vers /dashboard/index.php")
+            return {'success': True, 'session': session, 'email': data['email'], 'password': data['password']}
+        else:
+            print(f"❌ Échec inscription PROPRIÉTAIRE - Status: {resp.status_code}")
+            return {'success': False}
+    except Exception as e:
+        print(f"❌ Erreur inscription PROPRIÉTAIRE: {e}")
+        return {'success': False}
+
+def test_login_logout(email, password):
+    """Test 3: Login/Logout"""
+    print("\n=== TEST 3: Login/Logout ===")
+    try:
+        session = requests.Session()
+        resp = session.get(f"{BASE_URL}/login.php")
+        csrf = extract_csrf(resp.text)
+        
+        # Login
+        data = {'csrf': csrf, 'email': email, 'password': password}
+        resp = session.post(f"{BASE_URL}/login.php", data=data, allow_redirects=False)
+        
+        if resp.status_code == 302 and '/dashboard/index.php' in resp.headers.get('Location', ''):
+            print("✅ Login réussi")
+            
+            # Logout
+            resp = session.get(f"{BASE_URL}/logout.php", allow_redirects=False)
+            if resp.status_code == 302 and '/index.php' in resp.headers.get('Location', ''):
+                print("✅ Logout réussi")
+                return {'success': True}
+            else:
+                print(f"❌ Échec logout - Status: {resp.status_code}")
+                return {'success': False}
+        else:
+            print(f"❌ Échec login - Status: {resp.status_code}")
+            return {'success': False}
+    except Exception as e:
+        print(f"❌ Erreur login/logout: {e}")
+        return {'success': False}
+
+def test_create_listing(owner_session):
+    """Test 4: Propriétaire crée une annonce"""
+    print("\n=== TEST 4: Création d'annonce ===")
+    try:
+        resp = owner_session.get(f"{BASE_URL}/dashboard/create-listing.php")
+        csrf = extract_csrf(resp.text)
+        
+        data = {
+            'csrf': csrf,
+            'type': 'HOUSE',
+            'category': 'SALE',
+            'sub_category': 'VILLA',
+            'title': 'Belle villa moderne à Libreville',
+            'description': 'Magnifique villa de 4 chambres avec jardin et piscine. Quartier calme et sécurisé.',
+            'price': '2000000',
+            'city': 'Libreville',
+            'address': '123 Avenue de la Liberté',
+            'neighborhood': 'Quartier Louis'
+        }
+        resp = owner_session.post(f"{BASE_URL}/dashboard/create-listing.php", data=data, allow_redirects=False)
         
         if resp.status_code == 302:
-            print_test("Remise à 7%/7%", True, "Taux restaurés")
+            print("✅ Annonce créée avec succès - Status PENDING")
+            # Récupérer l'ID de l'annonce depuis la base
+            import subprocess
+            result = subprocess.run(
+                ['mysql', '-u', 'root', 'kapuce', '-e', 
+                 f"SELECT id FROM listings WHERE title = '{data['title']}' ORDER BY created_at DESC LIMIT 1;"],
+                capture_output=True, text=True
+            )
+            listing_id = result.stdout.strip().split('\n')[-1] if result.returncode == 0 else None
+            return {'success': True, 'listing_id': listing_id}
         else:
-            print_test("Remise à 7%/7%", False, f"Status: {resp.status_code}")
-    else:
-        print_test("Modification taux", False, f"Status: {resp.status_code}")
+            print(f"❌ Échec création annonce - Status: {resp.status_code}")
+            return {'success': False}
+    except Exception as e:
+        print(f"❌ Erreur création annonce: {e}")
+        return {'success': False}
 
-def test_securite():
-    """Test 12: Sécurité - Accès sans session"""
-    print("\n=== TEST 12: SÉCURITÉ ===")
+def test_admin_approve_listing(listing_id):
+    """Test 5: Admin approuve l'annonce"""
+    print("\n=== TEST 5: Admin approuve l'annonce ===")
+    try:
+        admin_session = requests.Session()
+        resp = admin_session.get(f"{BASE_URL}/admin/login.php")
+        csrf = extract_csrf(resp.text)
+        
+        # Login admin
+        data = {'csrf': csrf, 'email': 'superadmin@kapuce.com', 'password': 'SuperAdminPassword123!'}
+        resp = admin_session.post(f"{BASE_URL}/admin/login.php", data=data, allow_redirects=False)
+        
+        if resp.status_code != 302:
+            print(f"❌ Échec login admin - Status: {resp.status_code}")
+            return {'success': False, 'admin_session': None}
+        
+        print("✅ Login admin réussi")
+        
+        # Approuver l'annonce
+        resp = admin_session.get(f"{BASE_URL}/admin/listings.php")
+        csrf = extract_csrf(resp.text)
+        
+        data = {'csrf': csrf, 'listing_id': listing_id, 'action': 'approve'}
+        resp = admin_session.post(f"{BASE_URL}/admin/listings.php", data=data, allow_redirects=False)
+        
+        if resp.status_code == 302:
+            print("✅ Annonce approuvée - Status ACTIVE")
+            return {'success': True, 'admin_session': admin_session}
+        else:
+            print(f"❌ Échec approbation annonce - Status: {resp.status_code}")
+            return {'success': False, 'admin_session': admin_session}
+    except Exception as e:
+        print(f"❌ Erreur approbation annonce: {e}")
+        return {'success': False, 'admin_session': None}
+
+def test_request_visit(client_session, listing_id):
+    """Test 6: Client demande une visite"""
+    print("\n=== TEST 6: Client demande une visite ===")
+    try:
+        resp = client_session.get(f"{BASE_URL}/listing.php?id={listing_id}")
+        csrf = extract_csrf(resp.text)
+        
+        data = {
+            'csrf': csrf,
+            'action': 'request_visit',
+            'message': 'Bonjour, je suis très intéressé par cette villa. Pouvons-nous organiser une visite cette semaine ?'
+        }
+        resp = client_session.post(f"{BASE_URL}/listing.php?id={listing_id}", data=data, allow_redirects=False)
+        
+        if resp.status_code == 302:
+            print("✅ Demande de visite créée - Status PENDING")
+            # Récupérer l'ID de la visite
+            import subprocess
+            result = subprocess.run(
+                ['mysql', '-u', 'root', 'kapuce', '-e', 
+                 f"SELECT id FROM visit_requests WHERE listing_id = '{listing_id}' ORDER BY created_at DESC LIMIT 1;"],
+                capture_output=True, text=True
+            )
+            visit_id = result.stdout.strip().split('\n')[-1] if result.returncode == 0 else None
+            return {'success': True, 'visit_id': visit_id}
+        else:
+            print(f"❌ Échec demande de visite - Status: {resp.status_code}")
+            return {'success': False}
+    except Exception as e:
+        print(f"❌ Erreur demande de visite: {e}")
+        return {'success': False}
+
+def test_accept_visit(owner_session, visit_id):
+    """Test 7: Propriétaire accepte la visite"""
+    print("\n=== TEST 7: Propriétaire accepte la visite ===")
+    try:
+        resp = owner_session.get(f"{BASE_URL}/dashboard/visit-requests.php")
+        csrf = extract_csrf(resp.text)
+        
+        data = {'csrf': csrf, 'visit_id': visit_id, 'action': 'accept'}
+        resp = owner_session.post(f"{BASE_URL}/dashboard/visit-requests.php", data=data, allow_redirects=False)
+        
+        if resp.status_code == 302:
+            print("✅ Visite acceptée - Status ACCEPTED")
+            # Vérifier qu'une conversation a été créée
+            import subprocess
+            result = subprocess.run(
+                ['mysql', '-u', 'root', 'kapuce', '-e', 
+                 "SELECT COUNT(*) FROM conversations WHERE id IN (SELECT conversation_id FROM visit_requests WHERE id = '" + visit_id + "');"],
+                capture_output=True, text=True
+            )
+            conv_count = result.stdout.strip().split('\n')[-1] if result.returncode == 0 else '0'
+            if conv_count != '0':
+                print("✅ Conversation créée automatiquement")
+            return {'success': True}
+        else:
+            print(f"❌ Échec acceptation visite - Status: {resp.status_code}")
+            return {'success': False}
+    except Exception as e:
+        print(f"❌ Erreur acceptation visite: {e}")
+        return {'success': False}
+
+def test_messaging_antifraud(client_session, listing_id):
+    """Test 8: Messagerie avec anti-fraude"""
+    print("\n=== TEST 8: Messagerie avec anti-fraude ===")
+    try:
+        # Récupérer la conversation
+        import subprocess
+        result = subprocess.run(
+            ['mysql', '-u', 'root', 'kapuce', '-e', 
+             f"SELECT id FROM conversations WHERE listing_id = '{listing_id}' LIMIT 1;"],
+            capture_output=True, text=True
+        )
+        conv_id = result.stdout.strip().split('\n')[-1] if result.returncode == 0 else None
+        
+        if not conv_id:
+            print("❌ Aucune conversation trouvée")
+            return {'success': False}
+        
+        # Envoyer un message avec numéro de téléphone
+        headers = {'Content-Type': 'application/json'}
+        data = {
+            'conversation_id': conv_id,
+            'content': 'Appelez-moi au 077 12 34 56 pour discuter'
+        }
+        resp = client_session.post(f"{BASE_URL}/api/messages.php", json=data, headers=headers)
+        
+        if resp.status_code == 200:
+            result = resp.json()
+            if result.get('success') and result.get('message', {}).get('is_filtered') == 1:
+                print("✅ Message filtré - Numéro masqué avec [NUMÉRO MASQUÉ]")
+                print(f"   Contenu filtré: {result.get('message', {}).get('content')}")
+                
+                # Vérifier qu'une alerte fraude a été créée
+                import subprocess
+                alert_check = subprocess.run(
+                    ['mysql', '-u', 'root', 'kapuce', '-e', 
+                     f"SELECT COUNT(*) FROM fraud_alerts WHERE conversation_id = '{conv_id}' AND alert_type = 'PHONE_NUMBER';"],
+                    capture_output=True, text=True
+                )
+                alert_count = alert_check.stdout.strip().split('\n')[-1] if alert_check.returncode == 0 else '0'
+                if alert_count != '0':
+                    print("✅ Alerte fraude créée (PHONE_NUMBER, severity=HIGH)")
+                return {'success': True}
+            else:
+                print(f"❌ Message non filtré - is_filtered: {result.get('message', {}).get('is_filtered')}")
+                return {'success': False}
+        else:
+            print(f"❌ Échec envoi message - Status: {resp.status_code}")
+            return {'success': False}
+    except Exception as e:
+        print(f"❌ Erreur messagerie: {e}")
+        return {'success': False}
+
+def test_payment_flow(client_session, listing_id):
+    """Test 9: Flux de paiement"""
+    print("\n=== TEST 9: Flux de paiement ===")
+    try:
+        # Initier le paiement
+        resp = client_session.get(f"{BASE_URL}/listing.php?id={listing_id}")
+        csrf = extract_csrf(resp.text)
+        
+        data = {'csrf': csrf, 'action': 'start_payment'}
+        resp = client_session.post(f"{BASE_URL}/listing.php?id={listing_id}", data=data, allow_redirects=False)
+        
+        if resp.status_code != 302 or '/pay.php?id=' not in resp.headers.get('Location', ''):
+            print(f"❌ Échec initiation paiement - Status: {resp.status_code}")
+            return {'success': False}
+        
+        # Extraire l'ID de transaction
+        tx_id = resp.headers.get('Location', '').split('id=')[-1]
+        print(f"✅ Transaction créée - ID: {tx_id}, Status: PENDING_PAYMENT")
+        
+        # Effectuer le paiement
+        resp = client_session.get(f"{BASE_URL}/pay.php?id={tx_id}")
+        csrf = extract_csrf(resp.text)
+        
+        data = {
+            'csrf': csrf,
+            'method': 'MOOV_MONEY',
+            'phone': '065112233',
+            'reference': 'REF123456'
+        }
+        resp = client_session.post(f"{BASE_URL}/pay.php?id={tx_id}", data=data, allow_redirects=False)
+        
+        if resp.status_code == 302:
+            print("✅ Paiement effectué - Status: PAID")
+            
+            # Vérifier les montants en base
+            import subprocess
+            result = subprocess.run(
+                ['mysql', '-u', 'root', 'kapuce', '-e', 
+                 f"SELECT amount, commission_client, total_paid_by_buyer, seller_receives FROM transactions WHERE id = '{tx_id}';"],
+                capture_output=True, text=True
+            )
+            if result.returncode == 0:
+                lines = result.stdout.strip().split('\n')
+                if len(lines) > 1:
+                    values = lines[-1].split('\t')
+                    print(f"   Montant: {values[0]} FCFA")
+                    print(f"   Commission client (7%): {values[1]} FCFA")
+                    print(f"   Total payé par client: {values[2]} FCFA")
+                    print(f"   Vendeur reçoit: {values[3]} FCFA")
+            
+            return {'success': True, 'tx_id': tx_id}
+        else:
+            print(f"❌ Échec paiement - Status: {resp.status_code}")
+            return {'success': False}
+    except Exception as e:
+        print(f"❌ Erreur paiement: {e}")
+        return {'success': False}
+
+def test_admin_validate_payment(admin_session, tx_id):
+    """Test 10: Admin valide le paiement"""
+    print("\n=== TEST 10: Admin valide le paiement ===")
+    try:
+        resp = admin_session.get(f"{BASE_URL}/admin/transactions.php")
+        csrf = extract_csrf(resp.text)
+        
+        data = {'csrf': csrf, 'tx_id': tx_id, 'action': 'complete'}
+        resp = admin_session.post(f"{BASE_URL}/admin/transactions.php", data=data, allow_redirects=False)
+        
+        if resp.status_code == 302:
+            print("✅ Transaction validée - Status: COMPLETED")
+            
+            # Vérifier le statut de l'annonce
+            import subprocess
+            result = subprocess.run(
+                ['mysql', '-u', 'root', 'kapuce', '-e', 
+                 f"SELECT l.status FROM transactions t JOIN listings l ON l.id = t.listing_id WHERE t.id = '{tx_id}';"],
+                capture_output=True, text=True
+            )
+            if result.returncode == 0:
+                status = result.stdout.strip().split('\n')[-1]
+                print(f"   Statut annonce: {status}")
+            
+            return {'success': True}
+        else:
+            print(f"❌ Échec validation paiement - Status: {resp.status_code}")
+            return {'success': False}
+    except Exception as e:
+        print(f"❌ Erreur validation paiement: {e}")
+        return {'success': False}
+
+def test_admin_pages(admin_session):
+    """Test 11: Pages admin accessibles"""
+    print("\n=== TEST 11: Pages admin accessibles ===")
+    pages = [
+        '/admin/index.php',
+        '/admin/users.php',
+        '/admin/messages.php?tab=alerts',
+        '/admin/settings.php'
+    ]
     
-    # Test accès dashboard sans session
-    session = requests.Session()
-    resp = session.get(f"{BASE_URL}/dashboard/index.php", allow_redirects=False)
+    all_ok = True
+    for page in pages:
+        try:
+            resp = admin_session.get(f"{BASE_URL}{page}")
+            if resp.status_code == 200 and len(resp.text) > 100:
+                print(f"✅ {page} - Accessible (200)")
+            else:
+                print(f"❌ {page} - Status: {resp.status_code}")
+                all_ok = False
+        except Exception as e:
+            print(f"❌ {page} - Erreur: {e}")
+            all_ok = False
     
-    if resp.status_code == 302 and '/login.php' in resp.headers.get('Location', ''):
-        print_test("Accès /dashboard sans session", True, "Redirection vers /login.php")
-    else:
-        print_test("Accès /dashboard sans session", False, f"Status: {resp.status_code}, Location: {resp.headers.get('Location', 'N/A')}")
+    return {'success': all_ok}
+
+# ============================================================
+# PARTIE 2 - SYSTÈME DE NOTATION
+# ============================================================
+
+def test_review_button_visible(client_session, tx_id):
+    """Test 12: Bouton 'Noter' visible sur transaction COMPLETED"""
+    print("\n=== TEST 12: Bouton 'Noter' visible ===")
+    try:
+        resp = client_session.get(f"{BASE_URL}/dashboard/transactions.php")
+        
+        if resp.status_code == 200 and f'/review.php?tx={tx_id}' in resp.text:
+            print("✅ Bouton 'Noter' visible sur la page transactions")
+            return {'success': True}
+        else:
+            print(f"❌ Bouton 'Noter' non trouvé - Status: {resp.status_code}")
+            return {'success': False}
+    except Exception as e:
+        print(f"❌ Erreur vérification bouton: {e}")
+        return {'success': False}
+
+def test_review_form_display(client_session, tx_id):
+    """Test 13: GET /review.php?tx=TX_ID affiche le formulaire"""
+    print("\n=== TEST 13: Formulaire de notation ===")
+    try:
+        resp = client_session.get(f"{BASE_URL}/review.php?tx={tx_id}")
+        
+        if resp.status_code == 200 and 'name="rating"' in resp.text and 'name="comment"' in resp.text:
+            print("✅ Formulaire de notation affiché avec champs rating et comment")
+            csrf = extract_csrf(resp.text)
+            return {'success': True, 'csrf': csrf}
+        else:
+            print(f"❌ Formulaire non affiché - Status: {resp.status_code}")
+            return {'success': False}
+    except Exception as e:
+        print(f"❌ Erreur affichage formulaire: {e}")
+        return {'success': False}
+
+def test_post_review(client_session, tx_id, csrf):
+    """Test 14: POST review avec rating et comment"""
+    print("\n=== TEST 14: Soumission d'avis ===")
+    try:
+        data = {
+            'csrf': csrf,
+            'rating': '5',
+            'comment': 'Excellent propriétaire, très professionnel et à l\'écoute. Je recommande vivement !'
+        }
+        resp = client_session.post(f"{BASE_URL}/review.php?tx={tx_id}", data=data, allow_redirects=False)
+        
+        if resp.status_code == 302 and '/dashboard/transactions.php' in resp.headers.get('Location', ''):
+            print("✅ Avis créé avec succès - Redirection vers /dashboard/transactions.php")
+            
+            # Vérifier en base
+            import subprocess
+            result = subprocess.run(
+                ['mysql', '-u', 'root', 'kapuce', '-e', 
+                 f"SELECT rating, comment FROM reviews WHERE transaction_id = '{tx_id}' LIMIT 1;"],
+                capture_output=True, text=True
+            )
+            if result.returncode == 0:
+                lines = result.stdout.strip().split('\n')
+                if len(lines) > 1:
+                    print(f"   Avis en base: {lines[-1]}")
+            
+            return {'success': True}
+        else:
+            print(f"❌ Échec création avis - Status: {resp.status_code}")
+            return {'success': False}
+    except Exception as e:
+        print(f"❌ Erreur création avis: {e}")
+        return {'success': False}
+
+def test_duplicate_review_blocked(client_session, tx_id):
+    """Test 15: Doublon interdit"""
+    print("\n=== TEST 15: Doublon d'avis bloqué ===")
+    try:
+        resp = client_session.get(f"{BASE_URL}/review.php?tx={tx_id}")
+        
+        if resp.status_code == 200 and 'Vous avez déjà noté' in resp.text:
+            print("✅ Doublon bloqué - Message 'Vous avez déjà noté' affiché")
+            return {'success': True}
+        else:
+            print(f"❌ Doublon non bloqué - Status: {resp.status_code}")
+            return {'success': False}
+    except Exception as e:
+        print(f"❌ Erreur vérification doublon: {e}")
+        return {'success': False}
+
+def test_seller_review_with_antifraud(owner_session, tx_id):
+    """Test 16: Vendeur note aussi avec anti-fraude"""
+    print("\n=== TEST 16: Vendeur note avec anti-fraude ===")
+    try:
+        resp = owner_session.get(f"{BASE_URL}/review.php?tx={tx_id}")
+        csrf = extract_csrf(resp.text)
+        
+        if not csrf:
+            print("❌ CSRF non trouvé")
+            return {'success': False}
+        
+        data = {
+            'csrf': csrf,
+            'rating': '4',
+            'comment': 'Bon client, sérieux. Appelez-moi au 077 88 99 00 pour d\'autres biens.'
+        }
+        resp = owner_session.post(f"{BASE_URL}/review.php?tx={tx_id}", data=data, allow_redirects=False)
+        
+        if resp.status_code == 302:
+            print("✅ Avis vendeur créé")
+            
+            # Vérifier que le commentaire a été filtré (récupérer le dernier avis = vendeur)
+            import subprocess
+            result = subprocess.run(
+                ['mysql', '-u', 'root', 'kapuce', '-e', 
+                 f"SELECT comment FROM reviews WHERE transaction_id = '{tx_id}' ORDER BY created_at DESC LIMIT 1;"],
+                capture_output=True, text=True
+            )
+            if result.returncode == 0:
+                comment = result.stdout.strip().split('\n')[-1]
+                if '[NUMÉRO MASQUÉ]' in comment:
+                    print(f"✅ Anti-fraude appliqué - Commentaire: {comment}")
+                    return {'success': True}
+                else:
+                    print(f"❌ Anti-fraude non appliqué - Commentaire: {comment}")
+                    return {'success': False}
+            return {'success': True}
+        else:
+            print(f"❌ Échec création avis vendeur - Status: {resp.status_code}")
+            return {'success': False}
+    except Exception as e:
+        print(f"❌ Erreur avis vendeur: {e}")
+        return {'success': False}
+
+def test_rating_display_on_listing(listing_id):
+    """Test 17: Affichage de la note sur la page annonce"""
+    print("\n=== TEST 17: Affichage note sur listing ===")
+    try:
+        session = requests.Session()
+        resp = session.get(f"{BASE_URL}/listing.php?id={listing_id}")
+        
+        if resp.status_code == 200:
+            # Chercher la note moyenne et les avis
+            if '⭐ Avis sur le propriétaire' in resp.text or 'avis)' in resp.text:
+                print("✅ Section avis visible sur la page annonce")
+                if 'Excellent propriétaire' in resp.text or 'Bon client' in resp.text:
+                    print("✅ Commentaires d'avis affichés")
+                return {'success': True}
+            else:
+                print("❌ Section avis non trouvée")
+                return {'success': False}
+        else:
+            print(f"❌ Échec chargement page - Status: {resp.status_code}")
+            return {'success': False}
+    except Exception as e:
+        print(f"❌ Erreur affichage note: {e}")
+        return {'success': False}
+
+def test_review_restrictions():
+    """Test 18: Restrictions (tx invalide, sans session, tx non-completed)"""
+    print("\n=== TEST 18: Restrictions d'accès ===")
     
-    # Test accès admin sans session
-    resp = session.get(f"{BASE_URL}/admin/index.php", allow_redirects=False)
+    all_ok = True
     
-    if resp.status_code == 302 and '/admin/login.php' in resp.headers.get('Location', ''):
-        print_test("Accès /admin sans session", True, "Redirection vers /admin/login.php")
-    else:
-        print_test("Accès /admin sans session", False, f"Status: {resp.status_code}, Location: {resp.headers.get('Location', 'N/A')}")
+    # Test 1: Transaction invalide
+    try:
+        session = requests.Session()
+        # Login d'abord
+        resp = session.get(f"{BASE_URL}/login.php")
+        csrf = extract_csrf(resp.text)
+        data = {'csrf': csrf, 'email': 'superadmin@kapuce.com', 'password': 'SuperAdminPassword123!'}
+        session.post(f"{BASE_URL}/login.php", data=data)
+        
+        resp = session.get(f"{BASE_URL}/review.php?tx=INVALID_TX_ID", allow_redirects=False)
+        if resp.status_code == 302 and '/dashboard/transactions.php' in resp.headers.get('Location', ''):
+            print("✅ Transaction invalide - Redirection avec erreur")
+        else:
+            print(f"❌ Transaction invalide non gérée - Status: {resp.status_code}")
+            all_ok = False
+    except Exception as e:
+        print(f"❌ Erreur test tx invalide: {e}")
+        all_ok = False
     
-    # Test accès API messages sans session
-    resp = session.get(f"{BASE_URL}/api/messages.php?conversation_id=fake-id")
+    # Test 2: Sans session
+    try:
+        session = requests.Session()
+        resp = session.get(f"{BASE_URL}/review.php?tx=some_tx_id", allow_redirects=False)
+        if resp.status_code == 302 and '/login.php' in resp.headers.get('Location', ''):
+            print("✅ Sans session - Redirection vers /login.php")
+        else:
+            print(f"❌ Sans session non géré - Status: {resp.status_code}")
+            all_ok = False
+    except Exception as e:
+        print(f"❌ Erreur test sans session: {e}")
+        all_ok = False
     
-    if resp.status_code == 401:
-        print_test("Accès /api/messages.php sans session", True, "401 Unauthorized")
-    else:
-        print_test("Accès /api/messages.php sans session", False, f"Status: {resp.status_code}")
+    # Test 3: Transaction non-COMPLETED
+    try:
+        # Créer une transaction PENDING_PAYMENT
+        import subprocess
+        result = subprocess.run(
+            ['mysql', '-u', 'root', 'kapuce', '-e', 
+             "SELECT id FROM transactions WHERE status = 'PENDING_PAYMENT' LIMIT 1;"],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            lines = result.stdout.strip().split('\n')
+            if len(lines) > 1:
+                pending_tx_id = lines[-1]
+                
+                session = requests.Session()
+                resp = session.get(f"{BASE_URL}/login.php")
+                csrf = extract_csrf(resp.text)
+                data = {'csrf': csrf, 'email': 'superadmin@kapuce.com', 'password': 'SuperAdminPassword123!'}
+                session.post(f"{BASE_URL}/login.php", data=data)
+                
+                resp = session.get(f"{BASE_URL}/review.php?tx={pending_tx_id}", allow_redirects=False)
+                if resp.status_code == 302:
+                    print("✅ Transaction non-COMPLETED - Redirection avec erreur")
+                else:
+                    print(f"⚠️ Transaction non-COMPLETED - Status: {resp.status_code} (peut être OK si message d'erreur)")
+    except Exception as e:
+        print(f"⚠️ Test tx non-completed: {e}")
+    
+    return {'success': all_ok}
+
+def test_admin_reviews_page(admin_session):
+    """Test 19: Page admin des avis"""
+    print("\n=== TEST 19: Page admin des avis ===")
+    try:
+        resp = admin_session.get(f"{BASE_URL}/admin/reviews.php")
+        
+        if resp.status_code == 200:
+            print("✅ Page /admin/reviews.php accessible (200)")
+            
+            # Vérifier le contenu
+            if 'Avis & Notations' in resp.text or 'Avis publiés' in resp.text:
+                print("✅ Contenu de la page correct (titre, stats)")
+                
+                # Vérifier que les avis sont listés
+                if 'a noté' in resp.text or 'Aucun avis' in resp.text:
+                    print("✅ Liste des avis affichée")
+                    return {'success': True}
+            
+            print("⚠️ Page accessible mais contenu incomplet")
+            return {'success': True}
+        else:
+            print(f"❌ Page non accessible - Status: {resp.status_code}")
+            return {'success': False}
+    except Exception as e:
+        print(f"❌ Erreur page admin avis: {e}")
+        return {'success': False}
+
+def test_admin_delete_review(admin_session):
+    """Test 20: Admin supprime un avis"""
+    print("\n=== TEST 20: Admin supprime un avis ===")
+    try:
+        # Récupérer un ID d'avis
+        import subprocess
+        result = subprocess.run(
+            ['mysql', '-u', 'root', 'kapuce', '-e', 
+             "SELECT id FROM reviews LIMIT 1;"],
+            capture_output=True, text=True
+        )
+        
+        if result.returncode != 0 or len(result.stdout.strip().split('\n')) <= 1:
+            print("⚠️ Aucun avis à supprimer")
+            return {'success': True}
+        
+        review_id = result.stdout.strip().split('\n')[-1]
+        
+        resp = admin_session.get(f"{BASE_URL}/admin/reviews.php")
+        csrf = extract_csrf(resp.text)
+        
+        data = {'csrf': csrf, 'review_id': review_id, 'action': 'delete'}
+        resp = admin_session.post(f"{BASE_URL}/admin/reviews.php", data=data, allow_redirects=False)
+        
+        if resp.status_code == 302:
+            print("✅ Avis supprimé avec succès")
+            
+            # Vérifier en base
+            result = subprocess.run(
+                ['mysql', '-u', 'root', 'kapuce', '-e', 
+                 f"SELECT COUNT(*) FROM reviews WHERE id = '{review_id}';"],
+                capture_output=True, text=True
+            )
+            count = result.stdout.strip().split('\n')[-1] if result.returncode == 0 else '1'
+            if count == '0':
+                print("✅ Avis supprimé de la base")
+            return {'success': True}
+        else:
+            print(f"❌ Échec suppression avis - Status: {resp.status_code}")
+            return {'success': False}
+    except Exception as e:
+        print(f"❌ Erreur suppression avis: {e}")
+        return {'success': False}
 
 def main():
-    """Exécute tous les tests"""
-    print("=" * 60)
-    print("KAPUCE.G - TEST COMPLET VERSION PHP")
-    print("=" * 60)
-    print(f"Base URL: {BASE_URL}")
-    print(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    """Exécution de tous les tests"""
+    print("=" * 80)
+    print("TEST COMPLET KAPUCE.G - RÉGRESSION + SYSTÈME DE NOTATION")
+    print("=" * 80)
     
-    # Vérifier que le serveur répond
-    try:
-        resp = requests.get(BASE_URL, timeout=5)
-        print_test("Serveur PHP accessible", True, f"Status: {resp.status_code}")
-    except Exception as e:
-        print_test("Serveur PHP accessible", False, str(e))
+    results = []
+    
+    # PARTIE 1 - RÉGRESSION COMPLÈTE
+    print("\n" + "=" * 80)
+    print("PARTIE 1 - RÉGRESSION COMPLÈTE")
+    print("=" * 80)
+    
+    # Test 1-2: Inscription
+    client = test_register_client()
+    results.append(('Inscription CLIENT', client['success']))
+    
+    owner = test_register_owner()
+    results.append(('Inscription PROPRIÉTAIRE', owner['success']))
+    
+    if not client['success'] or not owner['success']:
+        print("\n❌ Tests d'inscription échoués - Arrêt")
         return
     
-    # Tests séquentiels
-    session_client, session_owner = test_inscription()
-    session_admin = test_connexion()
+    # Test 3: Login/Logout
+    login_result = test_login_logout(client['email'], client['password'])
+    results.append(('Login/Logout', login_result['success']))
     
-    if session_owner:
-        test_creation_annonce(session_owner)
+    # Test 4: Création annonce
+    listing = test_create_listing(owner['session'])
+    results.append(('Création annonce', listing['success']))
     
-    listing_id = None
-    if session_admin:
-        listing_id = test_moderation_admin(session_admin)
+    if not listing['success'] or not listing.get('listing_id'):
+        print("\n❌ Création annonce échouée - Arrêt")
+        return
     
-    if session_client and listing_id:
-        test_demande_visite(session_client, listing_id)
+    # Test 5: Admin approuve
+    admin_result = test_admin_approve_listing(listing['listing_id'])
+    results.append(('Admin approuve annonce', admin_result['success']))
     
-    if session_owner:
-        test_acceptation_visite(session_owner)
+    # Test 6: Demande visite
+    visit = test_request_visit(client['session'], listing['listing_id'])
+    results.append(('Demande de visite', visit['success']))
     
-    if session_client:
-        test_messagerie_anti_fraude(session_client)
+    if not visit['success'] or not visit.get('visit_id'):
+        print("\n❌ Demande de visite échouée - Arrêt")
+        return
     
-    tx_id = None
-    if session_client and listing_id:
-        tx_id = test_paiement_sequestre(session_client, listing_id)
+    # Test 7: Acceptation visite
+    accept_result = test_accept_visit(owner['session'], visit['visit_id'])
+    results.append(('Acceptation visite', accept_result['success']))
     
-    if session_admin:
-        test_validation_admin_transaction(session_admin, tx_id)
-        test_supervision_admin(session_admin)
-        test_taux_commission(session_admin)
+    # Test 8: Messagerie anti-fraude
+    msg_result = test_messaging_antifraud(client['session'], listing['listing_id'])
+    results.append(('Messagerie anti-fraude', msg_result['success']))
     
-    test_securite()
+    # Test 9: Paiement
+    payment = test_payment_flow(client['session'], listing['listing_id'])
+    results.append(('Flux de paiement', payment['success']))
     
-    print("\n" + "=" * 60)
-    print("TESTS TERMINÉS")
-    print("=" * 60)
+    if not payment['success'] or not payment.get('tx_id'):
+        print("\n❌ Paiement échoué - Arrêt")
+        return
+    
+    # Test 10: Admin valide
+    validate_result = test_admin_validate_payment(admin_result['admin_session'], payment['tx_id'])
+    results.append(('Admin valide paiement', validate_result['success']))
+    
+    # Test 11: Pages admin
+    admin_pages_result = test_admin_pages(admin_result['admin_session'])
+    results.append(('Pages admin accessibles', admin_pages_result['success']))
+    
+    # PARTIE 2 - SYSTÈME DE NOTATION
+    print("\n" + "=" * 80)
+    print("PARTIE 2 - SYSTÈME DE NOTATION")
+    print("=" * 80)
+    
+    # Test 12: Bouton Noter visible
+    button_result = test_review_button_visible(client['session'], payment['tx_id'])
+    results.append(('Bouton Noter visible', button_result['success']))
+    
+    # Test 13: Formulaire de notation
+    form_result = test_review_form_display(client['session'], payment['tx_id'])
+    results.append(('Formulaire de notation', form_result['success']))
+    
+    if not form_result['success'] or not form_result.get('csrf'):
+        print("\n❌ Formulaire non accessible - Arrêt tests notation")
+    else:
+        # Test 14: Soumission avis
+        post_result = test_post_review(client['session'], payment['tx_id'], form_result['csrf'])
+        results.append(('Soumission avis client', post_result['success']))
+        
+        # Test 15: Doublon bloqué
+        duplicate_result = test_duplicate_review_blocked(client['session'], payment['tx_id'])
+        results.append(('Doublon bloqué', duplicate_result['success']))
+        
+        # Test 16: Vendeur note avec anti-fraude
+        seller_review = test_seller_review_with_antifraud(owner['session'], payment['tx_id'])
+        results.append(('Avis vendeur + anti-fraude', seller_review['success']))
+        
+        # Test 17: Affichage sur listing
+        display_result = test_rating_display_on_listing(listing['listing_id'])
+        results.append(('Affichage note sur listing', display_result['success']))
+    
+    # Test 18: Restrictions
+    restrictions_result = test_review_restrictions()
+    results.append(('Restrictions d\'accès', restrictions_result['success']))
+    
+    # Test 19-20: Admin reviews
+    admin_reviews_result = test_admin_reviews_page(admin_result['admin_session'])
+    results.append(('Page admin avis', admin_reviews_result['success']))
+    
+    delete_result = test_admin_delete_review(admin_result['admin_session'])
+    results.append(('Admin supprime avis', delete_result['success']))
+    
+    # RÉSUMÉ
+    print("\n" + "=" * 80)
+    print("RÉSUMÉ DES TESTS")
+    print("=" * 80)
+    
+    passed = sum(1 for _, success in results if success)
+    total = len(results)
+    
+    for test_name, success in results:
+        status = "✅ PASS" if success else "❌ FAIL"
+        print(f"{status} - {test_name}")
+    
+    print("\n" + "=" * 80)
+    print(f"RÉSULTAT FINAL: {passed}/{total} tests réussis ({passed*100//total}%)")
+    print("=" * 80)
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

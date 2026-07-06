@@ -83,6 +83,12 @@ if ($user && !$isOwner) {
     $myVisit = $v->fetch();
 }
 
+// Notation du propriétaire + derniers avis
+$ownerRating = user_rating($listing['owner_id']);
+$stmtR = db()->prepare('SELECT r.*, u.full_name AS reviewer_name FROM reviews r JOIN users u ON u.id = r.reviewer_id WHERE r.reviewed_id = ? ORDER BY r.created_at DESC LIMIT 5');
+$stmtR->execute([$listing['owner_id']]);
+$ownerReviews = $stmtR->fetchAll();
+
 $pageTitle = $listing['title'];
 require_once __DIR__ . '/includes/header.php';
 
@@ -155,6 +161,25 @@ $valueLabels = [
                 </div>
             </div>
             <?php endif; ?>
+
+            <!-- Avis sur le propriétaire -->
+            <?php if ($ownerReviews): ?>
+            <div class="bg-white rounded-xl border border-gray-200 p-6 mt-6">
+                <h3 class="font-bold text-lg mb-4">⭐ Avis sur le propriétaire (<?= $ownerRating['count'] ?>)</h3>
+                <div class="space-y-4">
+                    <?php foreach ($ownerReviews as $rev): ?>
+                    <div class="border-b border-gray-100 pb-3 last:border-0">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="font-semibold text-sm"><?= h($rev['reviewer_name']) ?></span>
+                            <span class="text-sm"><?= stars_html($rev['rating']) ?></span>
+                            <span class="text-xs text-gray-400"><?= time_ago($rev['created_at']) ?></span>
+                        </div>
+                        <?php if ($rev['comment']): ?><p class="text-sm text-gray-600 italic">« <?= h($rev['comment']) ?> »</p><?php endif; ?>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
         </div>
 
         <!-- Sidebar -->
@@ -172,6 +197,11 @@ $valueLabels = [
                     <div>
                         <div class="font-semibold"><?= h($listing['owner_name']) ?></div>
                         <div class="text-xs text-gray-400">Membre depuis <?= date('m/Y', strtotime($listing['owner_since'])) ?></div>
+                        <?php if ($ownerRating['count'] > 0): ?>
+                        <div class="text-sm mt-0.5"><?= stars_html($ownerRating['avg']) ?> <span class="text-xs text-gray-500 font-semibold"><?= $ownerRating['avg'] ?>/5 (<?= $ownerRating['count'] ?> avis)</span></div>
+                        <?php else: ?>
+                        <div class="text-xs text-gray-400 mt-0.5">Pas encore d'avis</div>
+                        <?php endif; ?>
                     </div>
                 </div>
                 <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800 mb-4">

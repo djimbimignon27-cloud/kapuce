@@ -170,6 +170,20 @@ try {
         UNIQUE KEY uniq_fav (user_id, listing_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+    $pdo->exec("CREATE TABLE IF NOT EXISTS reviews (
+        id CHAR(36) PRIMARY KEY,
+        transaction_id CHAR(36) NOT NULL,
+        listing_id CHAR(36) NOT NULL,
+        reviewer_id CHAR(36) NOT NULL,
+        reviewed_id CHAR(36) NOT NULL,
+        rating TINYINT NOT NULL,
+        comment TEXT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uniq_review (transaction_id, reviewer_id),
+        INDEX idx_reviewed (reviewed_id),
+        INDEX idx_listing (listing_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
     // Seed settings
     $exists = $pdo->query("SELECT COUNT(*) FROM settings WHERE id = 'global'")->fetchColumn();
     if (!$exists) {

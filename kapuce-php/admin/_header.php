@@ -24,6 +24,7 @@ function nav_cls($page, $current) { return $page === $current ? 'bg-purple-700 t
                 <a href="/admin/users.php" class="px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap <?= nav_cls('users.php', $adminPage) ?>">Utilisateurs</a>
                 <a href="/admin/messages.php" class="px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap <?= nav_cls('messages.php', $adminPage) ?>">Messages & Fraudes</a>
                 <a href="/admin/transactions.php" class="px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap <?= nav_cls('transactions.php', $adminPage) ?>">Transactions</a>
+                <a href="/admin/reviews.php" class="px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap <?= nav_cls('reviews.php', $adminPage) ?>">Avis</a>
                 <a href="/admin/settings.php" class="px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap <?= nav_cls('settings.php', $adminPage) ?>">Taux</a>
             </div>
             <div class="flex items-center gap-3 whitespace-nowrap">

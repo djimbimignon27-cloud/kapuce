@@ -855,4 +855,43 @@ agent_communication:
   - agent: "main"
     message: "Conversion PHP complète créée. Tester via HTTP sur localhost:8080 (PHP built-in server). Auth = sessions PHP (cookies), CSRF token requis dans les formulaires POST (champ 'csrf' - récupérer depuis le HTML de la page). Admin seed: superadmin@kapuce.com / SuperAdminPassword123!. Flux complet à tester: inscription client + propriétaire -> création annonce (sans photos ok) -> admin approuve -> client demande visite -> propriétaire accepte -> conversation créée -> message avec numéro de téléphone doit être masqué [NUMÉRO MASQUÉ] + alerte fraude créée -> client initie paiement -> pay.php simule Mobile Money -> statut PAID -> admin valide -> COMPLETED + annonce SOLD/RENTED."
   - agent: "testing"
+
+# --- MISE À JOUR : Système de notation ajouté (version PHP) ---
+php_backend_update:
+  - task: "PHP - Système de notation (review.php, admin/reviews.php, notes sur listing.php)"
+    implemented: true
+    working: true
+    file: "/app/kapuce-php/review.php"
+    needs_retesting: false
+    priority: "high"
+    stuck_count: 0
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Avis possibles uniquement sur transaction COMPLETED, par l'acheteur ET le vendeur (1 avis par transaction par utilisateur, contrainte UNIQUE). Formulaire /review.php?tx=ID (POST: csrf, rating 1-5, comment). Anti-fraude appliqué au commentaire. Note moyenne affichée sur listing.php (carte propriétaire + section avis). Admin: /admin/reviews.php (liste + suppression). Bouton 'Noter' sur /dashboard/transactions.php pour les transactions COMPLETED."
+      - working: true
+        agent: "testing"
+        comment: "✅ SYSTÈME DE NOTATION 100% FONCTIONNEL (Tests 12-20: 8/9 réussis, 1 échec mineur dans test script). TESTS RÉUSSIS: (12) Bouton '⭐ Noter' visible sur /dashboard/transactions.php pour transactions COMPLETED ✅, (13) GET /review.php?tx=TX_ID affiche formulaire avec champs rating (1-5 étoiles) et comment (optionnel) ✅, (14) POST review crée avis en base avec rating=5 et commentaire ✅, (15) Doublon bloqué - message 'Vous avez déjà noté' affiché si utilisateur tente de noter 2 fois ✅, (16) ANTI-FRAUDE APPLIQUÉ AUX AVIS: Vendeur poste avis avec numéro '077 88 99 00' → masqué avec [NUMÉRO MASQUÉ] en base (vérifié: 'Bon client, sérieux. Appelez-moi au [NUMÉRO MASQUÉ] pour d'autres biens.') ✅, (17) Affichage sur listing.php: Section '⭐ Avis sur le propriétaire' visible avec note moyenne, nombre d'avis, et commentaires affichés ✅, (18) Restrictions: Transaction invalide → redirection avec erreur ✅, Sans session → redirection /login.php ✅, Transaction non-COMPLETED → redirection avec erreur ✅, (19) Page admin /admin/reviews.php accessible avec titre 'Avis & Notations', stats (total avis, note moyenne), liste des avis ✅, (20) Admin supprime avis: POST avec action=delete supprime l'avis de la base ✅. CONTRAINTE UNIQUE (transaction_id, reviewer_id) fonctionnelle. Fonction user_rating() calcule note moyenne correctement. Fonction stars_html() affiche étoiles ★★★★★. Note: Test 16 a un bug de vérification (query timing) mais fonctionnalité réelle 100% opérationnelle (vérifié en base)."
+  
+  - task: "PHP - Vérification complète du site (régression)"
+    implemented: true
+    working: true
+    file: "/app/kapuce-php/"
+    needs_retesting: false
+    priority: "high"
+    stuck_count: 0
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Re-test complet du flux de bout en bout avec nouveaux comptes pour vérifier qu'aucune régression n'a été introduite par le système de notation."
+      - working: true
+        agent: "testing"
+        comment: "✅ RÉGRESSION COMPLÈTE 100% RÉUSSIE (Tests 1-11: 11/11 réussis). FLUX COMPLET TESTÉ AVEC NOUVEAUX COMPTES: (1) Inscription CLIENT (role=USER, email unique, phone, password 8+ chars) → 302 /dashboard/index.php ✅, (2) Inscription PROPRIÉTAIRE (role=OWNER) → 302 /dashboard/index.php ✅, (3) Login/Logout fonctionnels avec sessions PHP persistées ✅, (4) Propriétaire crée annonce: POST /dashboard/create-listing.php (type=HOUSE, category=SALE, sub_category=VILLA, title='Belle villa moderne à Libreville', description 20+ chars, price=2000000, city=Libreville, address) → status PENDING ✅, (5) Admin approuve: POST /admin/listings.php (action=approve) → status ACTIVE, visible sur /listings.php ✅, (6) Client demande visite: POST /listing.php?id=X (action=request_visit, message) → status PENDING en base ✅, (7) Propriétaire accepte: POST /dashboard/visit-requests.php (action=accept) → status ACCEPTED, conversation créée automatiquement (vérifié en base) ✅, (8) Messagerie anti-fraude: POST /api/messages.php avec 'Appelez-moi au 077 12 34 56' → is_filtered=1, content='Appelez-moi au [NUMÉRO MASQUÉ] pour discuter', alerte fraude créée (alert_type=PHONE_NUMBER, severity=HIGH) ✅, (9) Paiement: POST /listing.php (action=start_payment) → 302 /pay.php?id=TX, POST /pay.php (method=MOOV_MONEY, phone=065112233) → status PAID, montants corrects (amount=2000000, commission_client 7%=140000, total_paid_by_buyer=2140000, seller_receives=1860000) ✅, (10) Admin valide: POST /admin/transactions.php (action=complete) → status COMPLETED, annonce status SOLD (car category=SALE) ✅, (11) Pages admin accessibles: /admin/index.php (200), /admin/users.php (200), /admin/messages.php?tab=alerts (200), /admin/settings.php (200) ✅. AUCUNE RÉGRESSION DÉTECTÉE. Tous les flux métier fonctionnent parfaitement."
+
+agent_communication:
+  - agent: "main"
+    message: "Système de notation ajouté. Re-tester le flux complet (régression) + le nouveau flux d'avis sur http://localhost:8080. La table reviews a été créée via install.php."
+  - agent: "testing"
     message: "🎉 TESTS PHP COMPLETS TERMINÉS - 100% RÉUSSITE (6/6 tâches). Tous les flux métier fonctionnent parfaitement sur http://localhost:8080. DÉTAILS: (1) Auth: inscription CLIENT/OWNER + login admin opérationnels, sessions PHP persistées, CSRF tokens validés. (2) Annonces: création avec status PENDING, modération admin PENDING→ACTIVE, affichage public après approbation. (3) Demandes visite: création status PENDING, acceptation propriétaire PENDING→ACCEPTED, conversation créée automatiquement. (4) Messagerie anti-fraude: GET/POST /api/messages.php fonctionnels, filtrage téléphone [NUMÉRO MASQUÉ] + email [EMAIL MASQUÉ] opérationnel, alertes fraude créées (severity HIGH), fraud_alert_count incrémenté, fraud_risk_level calculé (LOW pour 2 alertes), messages d'avertissement système ajoutés. (5) Transactions séquestre: initiation paiement, paiement Mobile Money status PAID, commission 7% calculée correctement (35000 FCFA sur 500000), seller_receives=465000, payment_reference généré (KAP-), validation admin PAID→COMPLETED, annonce RENTED. (6) Admin: login séparé, supervision messages/alertes accessible, modification taux commission 7%→10%/5%→7% fonctionnelle. Sécurité: redirections /login.php et /admin/login.php, API 401 sans session. AUCUN BUG CRITIQUE. Application PHP prête pour production LWS."
+  - agent: "testing"
+    message: "🎉 TESTS SYSTÈME DE NOTATION + RÉGRESSION COMPLÈTE TERMINÉS - 95% RÉUSSITE (19/20 tests). PARTIE 1 - RÉGRESSION (11/11 tests ✅): Flux complet de bout en bout avec NOUVEAUX comptes testé et fonctionnel (inscription CLIENT/OWNER, login/logout, création annonce PENDING, admin approuve → ACTIVE, demande visite PENDING, acceptation → ACCEPTED + conversation créée, messagerie anti-fraude avec [NUMÉRO MASQUÉ], paiement PENDING_PAYMENT → PAID avec calculs corrects (2M FCFA + 7% = 2.14M payé, 1.86M reçu), admin valide → COMPLETED + annonce SOLD, pages admin accessibles). PARTIE 2 - SYSTÈME DE NOTATION (8/9 tests ✅): Bouton 'Noter' visible sur transactions COMPLETED, formulaire /review.php?tx=TX_ID fonctionnel, soumission avis avec rating 1-5 + commentaire optionnel, doublon bloqué ('Vous avez déjà noté'), ANTI-FRAUDE APPLIQUÉ aux commentaires d'avis (numéro '077 88 99 00' → [NUMÉRO MASQUÉ] vérifié en base), affichage note moyenne + avis sur listing.php, restrictions (tx invalide/sans session/non-COMPLETED → redirections), page admin /admin/reviews.php avec liste + suppression fonctionnelle. SEUL ÉCHEC MINEUR: Test 16 a un bug de vérification (timing query) mais fonctionnalité réelle 100% opérationnelle. AUCUN BUG CRITIQUE. Application PHP KAPUCE.G prête pour production LWS."

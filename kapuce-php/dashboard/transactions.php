@@ -6,6 +6,14 @@ $stmt = db()->prepare('SELECT t.*, l.title AS listing_title, ub.full_name AS buy
 $stmt->execute([$user['id'], $user['id']]);
 $txs = $stmt->fetchAll();
 
+// Avis déjà laissés par l'utilisateur (transaction_id => review)
+$myReviews = [];
+if ($txs) {
+    $r = db()->prepare('SELECT transaction_id FROM reviews WHERE reviewer_id = ?');
+    $r->execute([$user['id']]);
+    foreach ($r->fetchAll() as $row) $myReviews[$row['transaction_id']] = true;
+}
+
 $pageTitle = 'Mes transactions';
 require_once __DIR__ . '/../includes/header.php';
 $statusColors = ['PENDING_PAYMENT' => 'bg-amber-100 text-amber-700', 'PAID' => 'bg-blue-100 text-blue-700', 'PROCESSING' => 'bg-purple-100 text-purple-700', 'COMPLETED' => 'bg-green-100 text-green-700', 'CANCELLED' => 'bg-gray-100 text-gray-600', 'REFUNDED' => 'bg-red-100 text-red-700', 'DISPUTED' => 'bg-red-100 text-red-700'];
@@ -39,6 +47,13 @@ $statusColors = ['PENDING_PAYMENT' => 'bg-amber-100 text-amber-700', 'PAID' => '
                         <div class="text-xl font-extrabold text-brand-600"><?= format_price($t['seller_receives']) ?></div>
                         <div class="text-xs text-gray-400">après commission KAPUCE.G (<?= h($t['commission_rate_owner']) ?>%)</div>
                         <?php if ($t['status'] === 'PAID'): ?><div class="text-xs text-blue-600 font-medium mt-1">🔒 Fonds en séquestre chez KAPUCE.G</div><?php endif; ?>
+                    <?php endif; ?>
+                    <?php if ($t['status'] === 'COMPLETED'): ?>
+                        <?php if (empty($myReviews[$t['id']])): ?>
+                            <a href="/review.php?tx=<?= h($t['id']) ?>" class="inline-block mt-2 bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-bold text-sm">⭐ Noter <?= $isBuyer ? 'le propriétaire' : 'le client' ?></a>
+                        <?php else: ?>
+                            <div class="text-xs text-amber-600 font-medium mt-2">⭐ Avis publié — merci !</div>
+                        <?php endif; ?>
                     <?php endif; ?>
                 </div>
             </div>
