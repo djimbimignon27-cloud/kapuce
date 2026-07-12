@@ -85,4 +85,4 @@ $riskColors = ['NONE' => 'bg-gray-100 text-gray-500', 'LOW' => 'bg-yellow-100 te
         </table>
     </div>
 </div>
-</body></html>
+<?php require_once __DIR__ . '/_footer.php'; ?>

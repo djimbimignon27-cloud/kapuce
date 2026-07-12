@@ -69,4 +69,4 @@ $listings = $stmt->fetchAll();
         <?php endforeach; ?>
     </div>
 </div>
-</body></html>
+<?php require_once __DIR__ . '/_footer.php'; ?>

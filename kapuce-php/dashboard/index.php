@@ -60,6 +60,14 @@ require_once __DIR__ . '/../includes/header.php';
             <h3 class="font-bold text-lg mb-1">🔍 Explorer les annonces</h3>
             <p class="text-sm text-green-100">Immobilier, véhicules et terrains partout au Gabon.</p>
         </a>
+        <a href="/dashboard/profile.php" class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition">
+            <h3 class="font-bold text-lg mb-1 text-gray-900">👤 Mon profil</h3>
+            <p class="text-sm text-gray-500">Modifiez vos informations personnelles et votre mot de passe.</p>
+        </a>
+        <a href="/dashboard/settings.php" class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition">
+            <h3 class="font-bold text-lg mb-1 text-gray-900">⚙️ Paramètres</h3>
+            <p class="text-sm text-gray-500">Gérez vos préférences de notifications.</p>
+        </a>
     </div>
 </div>
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

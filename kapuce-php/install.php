@@ -196,6 +196,20 @@ try {
         INDEX idx_listing (listing_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+    // --- Mises à jour de schéma (upgrades idempotents) ---
+    $upgrades = [
+        "ALTER TABLE users ADD COLUMN city VARCHAR(80) NULL",
+        "ALTER TABLE users ADD COLUMN address VARCHAR(255) NULL",
+        "ALTER TABLE users ADD COLUMN bio TEXT NULL",
+        "ALTER TABLE users ADD COLUMN notification_prefs TEXT NULL",
+        "ALTER TABLE transactions ADD COLUMN commission_modified TINYINT(1) DEFAULT 0",
+        "ALTER TABLE fraud_alerts ALTER status SET DEFAULT 'PENDING'",
+        "UPDATE fraud_alerts SET status = 'PENDING' WHERE status = 'NEW'",
+    ];
+    foreach ($upgrades as $sql) {
+        try { $pdo->exec($sql); } catch (PDOException $e) { /* colonne déjà existante */ }
+    }
+
     // Seed settings
     $exists = $pdo->query("SELECT COUNT(*) FROM settings WHERE id = 'global'")->fetchColumn();
     if (!$exists) {

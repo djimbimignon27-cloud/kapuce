@@ -40,4 +40,4 @@ $stats = $pdo->query('SELECT COUNT(*) AS total, COALESCE(AVG(rating), 0) AS avg_
         <?php endforeach; ?>
     </div>
 </div>
-</body></html>
+<?php require_once __DIR__ . '/_footer.php'; ?>

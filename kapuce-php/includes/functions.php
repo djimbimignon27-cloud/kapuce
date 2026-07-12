@@ -158,7 +158,7 @@ function get_warning_message($alertType) {
 // Crée une alerte fraude + met à jour le profil de risque de l'utilisateur
 function create_fraud_alert($userId, $messageId, $conversationId, $alertType, $severity, $detectedContent) {
     $pdo = db();
-    $stmt = $pdo->prepare("INSERT INTO fraud_alerts (id, user_id, message_id, conversation_id, alert_type, severity, detected_content, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'NEW', NOW())");
+    $stmt = $pdo->prepare("INSERT INTO fraud_alerts (id, user_id, message_id, conversation_id, alert_type, severity, detected_content, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING', NOW())");
     $stmt->execute([uuid(), $userId, $messageId, $conversationId, $alertType, $severity, $detectedContent]);
 
     $pdo->prepare('UPDATE users SET fraud_alert_count = fraud_alert_count + 1, last_fraud_alert_at = NOW() WHERE id = ?')->execute([$userId]);

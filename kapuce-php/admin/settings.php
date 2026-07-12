@@ -43,4 +43,4 @@ $settings = get_settings();
     </form>
     <p class="text-xs text-gray-400 mt-3">💡 Vous pouvez aussi définir une commission personnalisée par propriétaire dans la page Utilisateurs.</p>
 </div>
-</body></html>
+<?php require_once __DIR__ . '/_footer.php'; ?>
