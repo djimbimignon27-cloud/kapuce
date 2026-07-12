@@ -249,6 +249,20 @@ function listing_first_image($listing) {
     return 'https://res.cloudinary.com/demo/image/upload/w_600,h_400,c_fill/sample.jpg';
 }
 
+// ============================================================
+// NOTIFICATIONS
+// ============================================================
+function notify($userId, $type, $title, $message, $link = null) {
+    db()->prepare('INSERT INTO notifications (id, user_id, type, title, message, link, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())')
+        ->execute([uuid(), $userId, $type, $title, $message, $link]);
+}
+
+function unread_notifications_count($userId) {
+    $stmt = db()->prepare('SELECT COUNT(*) FROM notifications WHERE user_id = ? AND read_at IS NULL');
+    $stmt->execute([$userId]);
+    return (int)$stmt->fetchColumn();
+}
+
 // Note moyenne et nombre d'avis d'un utilisateur
 function user_rating($userId) {
     $stmt = db()->prepare('SELECT COALESCE(AVG(rating), 0) AS avg_rating, COUNT(*) AS count FROM reviews WHERE reviewed_id = ?');

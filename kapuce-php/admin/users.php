@@ -36,7 +36,7 @@ $riskColors = ['NONE' => 'bg-gray-100 text-gray-500', 'LOW' => 'bg-yellow-100 te
         <h1 class="text-2xl font-extrabold text-gray-900">Utilisateurs (<?= count($users) ?>)</h1>
         <form method="get" class="flex gap-2">
             <input type="text" name="q" value="<?= h($q) ?>" placeholder="Rechercher nom ou email..." class="border border-gray-200 rounded-lg px-3 py-2 text-sm">
-            <button class="bg-purple-600 text-white rounded-lg px-4 py-2 text-sm font-semibold">Rechercher</button>
+            <button class="bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-semibold">Rechercher</button>
         </form>
     </div>
     <div class="bg-white rounded-xl border border-gray-200 overflow-x-auto">

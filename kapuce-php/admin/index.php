@@ -25,7 +25,7 @@ $recentTx = $pdo->query("SELECT t.*, l.title FROM transactions t JOIN listings l
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
         <div class="bg-gray-900 text-white rounded-xl p-6"><div class="text-sm text-gray-400">🔒 Fonds en séquestre</div><div class="text-2xl font-extrabold"><?= format_price($stats['escrow']) ?></div></div>
-        <div class="bg-purple-600 text-white rounded-xl p-6"><div class="text-sm text-purple-200">💰 Commissions perçues (transactions terminées)</div><div class="text-2xl font-extrabold"><?= format_price($stats['commission_total']) ?></div></div>
+        <div class="bg-blue-600 text-white rounded-xl p-6"><div class="text-sm text-blue-200">💰 Commissions perçues (transactions terminées)</div><div class="text-2xl font-extrabold"><?= format_price($stats['commission_total']) ?></div></div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">

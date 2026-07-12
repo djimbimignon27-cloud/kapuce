@@ -33,7 +33,7 @@ $listings = $stmt->fetchAll();
     <h1 class="text-2xl font-extrabold text-gray-900 mb-4">Modération des annonces</h1>
     <div class="flex gap-2 mb-6 overflow-x-auto">
         <?php foreach (['PENDING' => 'En attente', 'ACTIVE' => 'Actives', 'REJECTED' => 'Rejetées', 'SUSPENDED' => 'Suspendues', 'ALL' => 'Toutes'] as $k => $v): ?>
-        <a href="?filter=<?= $k ?>" class="px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap <?= $filter === $k ? 'bg-purple-600 text-white' : 'bg-white border border-gray-200 text-gray-600' ?>"><?= $v ?></a>
+        <a href="?filter=<?= $k ?>" class="px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap <?= $filter === $k ? 'bg-blue-600 text-white' : 'bg-white border border-gray-200 text-gray-600' ?>"><?= $v ?></a>
         <?php endforeach; ?>
     </div>
 
@@ -45,7 +45,7 @@ $listings = $stmt->fetchAll();
             <div class="flex-1">
                 <div class="text-xs text-gray-400 mb-1"><?= type_label($l['type']) ?> • <?= category_label($l['category']) ?> • <?= h($l['city']) ?> • Statut : <strong><?= status_label($l['status']) ?></strong></div>
                 <h3 class="font-bold"><?= h($l['title']) ?></h3>
-                <div class="text-purple-600 font-bold"><?= format_price($l['price']) ?></div>
+                <div class="text-blue-600 font-bold"><?= format_price($l['price']) ?></div>
                 <div class="text-xs text-gray-500 mt-1">Par <?= h($l['owner_name']) ?> (<?= h($l['owner_email']) ?>)</div>
                 <p class="text-sm text-gray-600 mt-1 line-clamp-2"><?= h(mb_substr($l['description'], 0, 180)) ?>...</p>
             </div>

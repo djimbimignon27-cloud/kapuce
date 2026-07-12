@@ -37,9 +37,9 @@ $settings = get_settings();
             <strong>Exemple avec un bien à 1 000 000 FCFA :</strong><br>
             Client paie : 1 000 000 + <?= h($settings['commission_client']) ?>% = <?= format_price(1000000 * (1 + $settings['commission_client'] / 100)) ?><br>
             Propriétaire reçoit : 1 000 000 - <?= h($settings['commission_owner']) ?>% = <?= format_price(1000000 * (1 - $settings['commission_owner'] / 100)) ?><br>
-            <strong class="text-purple-700">KAPUCE.G gagne : <?= format_price(1000000 * ($settings['commission_client'] + $settings['commission_owner']) / 100) ?></strong>
+            <strong class="text-blue-700">KAPUCE.G gagne : <?= format_price(1000000 * ($settings['commission_client'] + $settings['commission_owner']) / 100) ?></strong>
         </div>
-        <button class="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg font-bold">Enregistrer les taux</button>
+        <button class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-bold">Enregistrer les taux</button>
     </form>
     <p class="text-xs text-gray-400 mt-3">💡 Vous pouvez aussi définir une commission personnalisée par propriétaire dans la page Utilisateurs.</p>
 </div>

@@ -29,7 +29,7 @@ $stats = $pdo->query('SELECT COUNT(*) AS total, COALESCE(AVG(rating), 0) AS avg_
                     <span class="text-amber-400 font-bold"><?= str_repeat('★', (int)$r['rating']) . str_repeat('☆', 5 - (int)$r['rating']) ?></span>
                     <span class="text-xs text-gray-400"><?= time_ago($r['created_at']) ?></span>
                 </div>
-                <div class="text-sm"><strong><?= h($r['reviewer_name']) ?></strong> a noté <strong><?= h($r['reviewed_name']) ?></strong> — <span class="text-purple-600"><?= h($r['listing_title']) ?></span></div>
+                <div class="text-sm"><strong><?= h($r['reviewer_name']) ?></strong> a noté <strong><?= h($r['reviewed_name']) ?></strong> — <span class="text-blue-600"><?= h($r['listing_title']) ?></span></div>
                 <?php if ($r['comment']): ?><p class="text-sm text-gray-600 mt-1 italic">« <?= h($r['comment']) ?> »</p><?php endif; ?>
             </div>
             <form method="post" onsubmit="return confirm('Supprimer cet avis ?')">

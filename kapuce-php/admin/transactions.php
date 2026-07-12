@@ -23,6 +23,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $title = $lt->fetchColumn();
             $conv = get_or_create_conversation($tx['buyer_id'], $tx['seller_id'], $tx['listing_id'], $title);
             send_message($conv['id'], 'SYSTEM', $tx['seller_id'], '✅ Transaction validée par KAPUCE.G ! Le versement de ' . format_price($tx['seller_receives']) . ' (après commission) vous sera effectué sur votre compte Mobile Money.', true);
+            notify($tx['seller_id'], 'TX_COMPLETED', 'Transaction validée 💰', 'KAPUCE.G a validé la transaction "' . $title . '". Vous recevrez ' . format_price($tx['seller_receives']) . '.', '/dashboard/transactions.php');
+            notify($tx['buyer_id'], 'TX_COMPLETED', 'Transaction terminée ✅', 'Votre transaction pour "' . $title . '" est validée. Vous pouvez noter le propriétaire.', '/dashboard/transactions.php');
             flash('✅ Transaction validée. Le propriétaire recevra ' . format_price($tx['seller_receives']) . '.');
         } elseif ($action === 'refund' && in_array($tx['status'], ['PAID', 'DISPUTED'])) {
             $pdo->prepare("UPDATE transactions SET status = 'REFUNDED', admin_notes = ? WHERE id = ?")->execute([trim($_POST['reason'] ?? ''), $id]);
@@ -49,7 +51,7 @@ $statusColors = ['PENDING_PAYMENT' => 'bg-amber-100 text-amber-700', 'PAID' => '
     <h1 class="text-2xl font-extrabold text-gray-900 mb-4">Validation des transactions (Séquestre)</h1>
     <div class="flex gap-2 mb-6 overflow-x-auto">
         <?php foreach (['ALL' => 'Toutes', 'PAID' => 'À valider (séquestre)', 'PENDING_PAYMENT' => 'En attente paiement', 'COMPLETED' => 'Terminées', 'REFUNDED' => 'Remboursées'] as $k => $v): ?>
-        <a href="?filter=<?= $k ?>" class="px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap <?= $filter === $k ? 'bg-purple-600 text-white' : 'bg-white border border-gray-200 text-gray-600' ?>"><?= $v ?></a>
+        <a href="?filter=<?= $k ?>" class="px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap <?= $filter === $k ? 'bg-blue-600 text-white' : 'bg-white border border-gray-200 text-gray-600' ?>"><?= $v ?></a>
         <?php endforeach; ?>
     </div>
 
@@ -69,7 +71,7 @@ $statusColors = ['PENDING_PAYMENT' => 'bg-amber-100 text-amber-700', 'PAID' => '
                         <div class="bg-gray-50 rounded p-2"><div class="text-gray-400">Montant bien</div><div class="font-bold"><?= format_price($t['amount']) ?></div></div>
                         <div class="bg-blue-50 rounded p-2"><div class="text-gray-400">Payé par client (+<?= h($t['commission_rate_client']) ?>%)</div><div class="font-bold text-blue-700"><?= format_price($t['total_paid_by_buyer']) ?></div></div>
                         <div class="bg-green-50 rounded p-2"><div class="text-gray-400">Dû au vendeur (-<?= h($t['commission_rate_owner']) ?>%)</div><div class="font-bold text-green-700"><?= format_price($t['seller_receives']) ?></div></div>
-                        <div class="bg-purple-50 rounded p-2"><div class="text-gray-400">Commission KAPUCE.G</div><div class="font-bold text-purple-700"><?= format_price($t['commission_client'] + $t['commission_owner']) ?></div></div>
+                        <div class="bg-blue-50 rounded p-2"><div class="text-gray-400">Commission KAPUCE.G</div><div class="font-bold text-blue-700"><?= format_price($t['commission_client'] + $t['commission_owner']) ?></div></div>
                     </div>
                 </div>
                 <div class="flex lg:flex-col gap-2 justify-end">

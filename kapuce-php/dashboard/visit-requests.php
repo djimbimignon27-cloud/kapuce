@@ -16,9 +16,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Créer la conversation + message système
             $conv = get_or_create_conversation($vr['requester_id'], $user['id'], $vr['listing_id'], $vr['listing_title']);
             send_message($conv['id'], 'SYSTEM', $vr['requester_id'], "✅ Votre demande de visite pour \"" . $vr['listing_title'] . "\" a été acceptée ! Discutez ici avec le propriétaire pour fixer la date et l'heure du rendez-vous. Rappel : toute communication et tout paiement doivent passer par KAPUCE.G.", true);
+            notify($vr['requester_id'], 'VISIT_ACCEPTED', 'Visite acceptée ✅', 'Votre demande de visite pour "' . $vr['listing_title'] . '" a été acceptée. Fixez le rendez-vous via la messagerie.', '/messages.php');
             flash('✅ Visite acceptée. Une conversation sécurisée a été ouverte avec le client.');
         } elseif ($action === 'reject') {
             db()->prepare("UPDATE visit_requests SET status = 'REJECTED', rejected_at = NOW() WHERE id = ?")->execute([$vrId]);
+            notify($vr['requester_id'], 'VISIT_REJECTED', 'Visite refusée', 'Votre demande de visite pour "' . $vr['listing_title'] . '" a été refusée par le propriétaire.', '/dashboard/my-visits.php');
             flash('Demande de visite refusée.');
         }
     }

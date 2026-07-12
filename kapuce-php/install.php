@@ -170,6 +170,18 @@ try {
         UNIQUE KEY uniq_fav (user_id, listing_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+    $pdo->exec("CREATE TABLE IF NOT EXISTS notifications (
+        id CHAR(36) PRIMARY KEY,
+        user_id CHAR(36) NOT NULL,
+        type VARCHAR(30) NOT NULL,
+        title VARCHAR(150) NOT NULL,
+        message TEXT NULL,
+        link VARCHAR(300) NULL,
+        read_at DATETIME NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_user (user_id, read_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
     $pdo->exec("CREATE TABLE IF NOT EXISTS reviews (
         id CHAR(36) PRIMARY KEY,
         transaction_id CHAR(36) NOT NULL,

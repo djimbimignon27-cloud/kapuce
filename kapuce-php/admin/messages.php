@@ -27,8 +27,8 @@ $sevColors = ['LOW' => 'bg-yellow-100 text-yellow-700', 'MEDIUM' => 'bg-amber-10
 <div class="max-w-7xl mx-auto px-4 py-8">
     <h1 class="text-2xl font-extrabold text-gray-900 mb-4">Supervision des messages & alertes fraude</h1>
     <div class="flex gap-2 mb-6">
-        <a href="?tab=alerts" class="px-4 py-2 rounded-lg text-sm font-semibold <?= $tab === 'alerts' ? 'bg-purple-600 text-white' : 'bg-white border border-gray-200 text-gray-600' ?>">🚨 Alertes fraude</a>
-        <a href="?tab=conversations" class="px-4 py-2 rounded-lg text-sm font-semibold <?= $tab === 'conversations' ? 'bg-purple-600 text-white' : 'bg-white border border-gray-200 text-gray-600' ?>">💬 Conversations</a>
+        <a href="?tab=alerts" class="px-4 py-2 rounded-lg text-sm font-semibold <?= $tab === 'alerts' ? 'bg-blue-600 text-white' : 'bg-white border border-gray-200 text-gray-600' ?>">🚨 Alertes fraude</a>
+        <a href="?tab=conversations" class="px-4 py-2 rounded-lg text-sm font-semibold <?= $tab === 'conversations' ? 'bg-blue-600 text-white' : 'bg-white border border-gray-200 text-gray-600' ?>">💬 Conversations</a>
     </div>
 
     <?php if ($tab === 'alerts'): ?>
@@ -48,7 +48,7 @@ $sevColors = ['LOW' => 'bg-yellow-100 text-yellow-700', 'MEDIUM' => 'bg-amber-10
                     <div class="bg-red-50 border border-red-100 rounded-lg p-2 mt-2 text-sm text-gray-700">
                         <span class="text-xs text-red-500 font-semibold">Contenu original détecté :</span><br><?= h($a['detected_content']) ?>
                     </div>
-                    <?php if ($a['conversation_id']): ?><a href="?tab=conversations&conv=<?= h($a['conversation_id']) ?>" class="text-xs text-purple-600 font-semibold">Voir la conversation →</a><?php endif; ?>
+                    <?php if ($a['conversation_id']): ?><a href="?tab=conversations&conv=<?= h($a['conversation_id']) ?>" class="text-xs text-blue-600 font-semibold">Voir la conversation →</a><?php endif; ?>
                 </div>
                 <?php if ($a['status'] === 'NEW'): ?>
                 <form method="post">
@@ -65,9 +65,9 @@ $sevColors = ['LOW' => 'bg-yellow-100 text-yellow-700', 'MEDIUM' => 'bg-amber-10
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div class="bg-white rounded-xl border border-gray-200 overflow-y-auto" style="max-height: 600px">
             <?php foreach ($conversations as $c): ?>
-            <a href="?tab=conversations&conv=<?= h($c['id']) ?>" class="block p-3 border-b border-gray-100 hover:bg-gray-50 <?= $convId === $c['id'] ? 'bg-purple-50' : '' ?>">
+            <a href="?tab=conversations&conv=<?= h($c['id']) ?>" class="block p-3 border-b border-gray-100 hover:bg-gray-50 <?= $convId === $c['id'] ? 'bg-blue-50' : '' ?>">
                 <div class="text-sm font-semibold"><?= h($c['p1_name']) ?> ↔ <?= h($c['p2_name']) ?></div>
-                <?php if ($c['listing_title']): ?><div class="text-xs text-purple-600 truncate">📌 <?= h($c['listing_title']) ?></div><?php endif; ?>
+                <?php if ($c['listing_title']): ?><div class="text-xs text-blue-600 truncate">📌 <?= h($c['listing_title']) ?></div><?php endif; ?>
                 <div class="text-xs text-gray-400 truncate"><?= h($c['last_message'] ?? '') ?></div>
             </a>
             <?php endforeach; ?>

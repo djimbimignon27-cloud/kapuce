@@ -28,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body class="bg-gray-900 min-h-screen flex items-center justify-center p-4">
     <div class="bg-white rounded-xl p-8 max-w-md w-full">
         <div class="text-center mb-6">
-            <div class="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center text-white font-extrabold text-xl mx-auto mb-3">K</div>
+            <div class="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-white font-extrabold text-xl mx-auto mb-3">K</div>
             <h1 class="text-xl font-extrabold text-gray-900">Administration KAPUCE.G</h1>
             <p class="text-sm text-gray-500">Accès réservé</p>
         </div>
@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <input type="hidden" name="csrf" value="<?= csrf_token() ?>">
             <input type="email" name="email" required placeholder="Email administrateur" class="w-full border border-gray-200 rounded-lg px-3 py-2.5">
             <input type="password" name="password" required placeholder="Mot de passe" class="w-full border border-gray-200 rounded-lg px-3 py-2.5">
-            <button class="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg font-bold">Connexion Admin</button>
+            <button class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-bold">Connexion Admin</button>
         </form>
     </div>
 </body>

@@ -20,6 +20,8 @@ define('CLOUDINARY_API_SECRET', '42smXbPlNun1n4JgkHK_TpsX_MM');
 
 // --- Site ---
 define('SITE_NAME', 'KAPUCE.G');
+define('CONTACT_AIRTEL', '077347262');   // Numéro Airtel Money officiel KAPUCE.G
+define('CONTACT_MOOV', '065216069');     // Numéro Moov Money officiel KAPUCE.G
 define('DEFAULT_COMMISSION_CLIENT', 7);  // % commission client
 define('DEFAULT_COMMISSION_OWNER', 7);   // % commission propriétaire
 define('MAX_PHOTOS', 5);
