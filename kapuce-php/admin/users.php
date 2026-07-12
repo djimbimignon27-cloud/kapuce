@@ -17,6 +17,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $rate = $_POST['rate'] === '' ? null : max(0, min(50, (float)$_POST['rate']));
         $pdo->prepare('UPDATE users SET custom_commission_rate = ? WHERE id = ?')->execute([$rate, $id]);
         flash('Commission personnalisée mise à jour.');
+    } elseif ($action === 'contact') {
+        // L'admin peut contacter n'importe quel utilisateur via la messagerie interne
+        $target = $pdo->prepare('SELECT id, full_name FROM users WHERE id = ?');
+        $target->execute([$id]);
+        $targetUser = $target->fetch();
+        if ($targetUser && $targetUser['id'] !== $admin['id']) {
+            $conv = get_or_create_conversation($admin['id'], $targetUser['id'], null, 'Support KAPUCE.G');
+            notify($targetUser['id'], 'ADMIN_CONTACT', '📩 Message de l\'équipe KAPUCE.G', 'L\'administration KAPUCE.G souhaite échanger avec vous. Consultez votre messagerie.', '/messages.php?c=' . $conv['id']);
+            redirect('/messages.php?c=' . $conv['id']);
+        }
+        flash('Utilisateur introuvable.', 'error');
     }
     redirect('/admin/users.php');
 }
@@ -67,6 +78,11 @@ $riskColors = ['NONE' => 'bg-gray-100 text-gray-500', 'LOW' => 'bg-yellow-100 te
                     </td>
                     <td class="px-4 py-3"><?= $u['is_banned'] ? '<span class="text-xs font-bold bg-red-100 text-red-700 px-2 py-1 rounded">BANNI</span>' : '<span class="text-xs font-bold bg-green-100 text-green-700 px-2 py-1 rounded">Actif</span>' ?></td>
                     <td class="px-4 py-3">
+                        <div class="flex flex-wrap gap-1.5">
+                        <?php if ($u['id'] !== $admin['id']): ?>
+                        <form method="post"><input type="hidden" name="csrf" value="<?= csrf_token() ?>"><input type="hidden" name="user_id" value="<?= h($u['id']) ?>"><input type="hidden" name="action" value="contact">
+                            <button class="text-xs bg-kama-blue hover:bg-blue-800 text-white rounded px-3 py-1 font-semibold" title="Ouvrir une conversation avec cet utilisateur">💬 Contacter</button></form>
+                        <?php endif; ?>
                         <?php if ($u['role'] !== 'SUPER_ADMIN'): ?>
                         <?php if (!$u['is_banned']): ?>
                         <form method="post" onsubmit="const r = prompt('Motif du bannissement :'); if (!r) return false; this.reason.value = r;">
@@ -78,6 +94,7 @@ $riskColors = ['NONE' => 'bg-gray-100 text-gray-500', 'LOW' => 'bg-yellow-100 te
                             <button class="text-xs border border-green-200 text-green-600 rounded px-3 py-1 font-semibold">Réactiver</button></form>
                         <?php endif; ?>
                         <?php endif; ?>
+                        </div>
                     </td>
                 </tr>
                 <?php endforeach; ?>

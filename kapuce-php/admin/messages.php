@@ -54,6 +54,9 @@ $totalMessages = (int)$pdo->query('SELECT COUNT(*) FROM messages WHERE is_system
                         <strong class="text-gray-900"><?= h($m['sender_name'] ?? 'Système') ?></strong>
                         <span class="text-xs text-gray-400"><?= date('d/m H:i', strtotime($m['created_at'])) ?></span>
                     </div>
+                    <?php if (!empty($m['image_url'])): ?>
+                    <a href="<?= h($m['image_url']) ?>" target="_blank" class="block mt-1 mb-1"><img src="<?= h($m['image_url']) ?>" class="rounded-xl max-h-48 border border-gray-200" alt="Pièce jointe"></a>
+                    <?php endif; ?>
                     <div class="text-gray-700 mt-0.5"><?= h($m['content']) ?></div>
                     <?php if ($m['is_filtered']): ?>
                     <div class="mt-2 bg-red-50 border border-red-100 rounded-lg p-2 text-xs">

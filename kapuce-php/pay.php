@@ -29,6 +29,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $tx['status'] === 'PENDING_PAYMENT'
     notify($tx['seller_id'], 'PAYMENT', 'Paiement reçu en séquestre', 'Un client a payé pour "' . $tx['listing_title'] . '". Validation KAPUCE.G en cours.', '/dashboard/transactions.php');
     notify($tx['buyer_id'], 'PAYMENT', 'Paiement enregistré', 'Votre paiement pour "' . $tx['listing_title'] . '" est en cours de vérification (24-48h).', '/dashboard/transactions.php');
 
+    // ÉTAPE OBLIGATOIRE : envoi de la capture d'écran au support KAPUCE.G
+    $support = get_support_conversation($tx['buyer_id']);
+    if ($support) {
+        $methodLabel = $method === 'AIRTEL_MONEY' ? 'Airtel Money (' . CONTACT_AIRTEL . ')' : 'Moov Money (' . CONTACT_MOOV . ')';
+        send_message($support['id'], 'SYSTEM', $tx['buyer_id'], "📷 DERNIÈRE ÉTAPE : vous avez déclaré un paiement de " . format_price($tx['total_paid_by_buyer']) . " via $methodLabel (réf. $reference) pour \"" . $tx['listing_title'] . "\". Envoyez ici la CAPTURE D'ÉCRAN de la transaction Mobile Money en cliquant sur le bouton 📎 ci-dessous. Notre équipe validera votre paiement après vérification.", true);
+        $supportAdminId = get_support_admin_id();
+        if ($supportAdminId) {
+            notify($supportAdminId, 'PAYMENT_PROOF', '💳 Paiement déclaré — capture attendue', $user['full_name'] . ' a déclaré un paiement de ' . format_price($tx['total_paid_by_buyer']) . ' (réf. ' . $reference . '). Vérifiez la capture d\'écran dans la messagerie puis validez la transaction.', '/messages.php?c=' . $support['id']);
+        }
+        flash('✅ Paiement déclaré (réf. ' . $reference . ') ! DERNIÈRE ÉTAPE : envoyez la capture d\'écran de votre transaction Mobile Money ici, via le bouton 📎.');
+        redirect('/messages.php?c=' . $support['id']);
+    }
+
     flash('✅ Paiement déclaré avec succès ! Notre équipe vérifie votre paiement sous 24-48h. Référence : ' . $reference);
     redirect('/dashboard/transactions.php');
 }
@@ -90,6 +103,25 @@ require_once __DIR__ . '/includes/header.php';
             <a href="/dashboard/transactions.php" class="text-kama-blue underline text-sm">Voir mes transactions</a>
         </div>
     <?php else: ?>
+
+    <!-- Comment payer : 3 étapes -->
+    <div class="mb-6 bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+        <h3 class="font-bold text-lg text-gray-900 mb-4">Comment payer ? <span class="text-sm font-normal text-gray-400">(3 étapes simples)</span></h3>
+        <div class="grid md:grid-cols-3 gap-4">
+            <div class="bg-slate-50 rounded-xl p-4">
+                <div class="w-9 h-9 bg-gradient-to-br from-kama-blue to-blue-700 text-white rounded-full flex items-center justify-center font-black mb-2">1</div>
+                <p class="text-sm text-gray-700"><strong>Envoyez le montant total</strong> par Mobile Money au numéro officiel KAPUCE.G ci-dessous (Airtel ou Moov).</p>
+            </div>
+            <div class="bg-slate-50 rounded-xl p-4">
+                <div class="w-9 h-9 bg-gradient-to-br from-kama-gold to-yellow-600 text-white rounded-full flex items-center justify-center font-black mb-2">2</div>
+                <p class="text-sm text-gray-700"><strong>Saisissez la référence</strong> de transaction reçue par SMS dans le formulaire ci-dessous.</p>
+            </div>
+            <div class="bg-slate-50 rounded-xl p-4">
+                <div class="w-9 h-9 bg-gradient-to-br from-green-500 to-emerald-600 text-white rounded-full flex items-center justify-center font-black mb-2">3</div>
+                <p class="text-sm text-gray-700"><strong>Envoyez la capture d'écran</strong> de la transaction à KAPUCE.G via la messagerie (📎) — vous y serez redirigé automatiquement.</p>
+            </div>
+        </div>
+    </div>
 
     <!-- Comptes Mobile Money officiels KAPUCE.G -->
     <div class="grid md:grid-cols-2 gap-6 mb-8">
@@ -165,7 +197,7 @@ require_once __DIR__ . '/includes/header.php';
             <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
                 <p class="text-sm text-yellow-900 flex items-start gap-2">
                     <span>⏰</span>
-                    <span><strong>Validation sous 24-48h :</strong> Notre équipe vérifiera votre paiement. Le propriétaire recevra son argent sous 24h après validation.</span>
+                    <span><strong>Validation sous 24-48h :</strong> après confirmation, vous serez redirigé vers la messagerie KAPUCE.G pour envoyer la <strong>capture d'écran de votre transaction</strong> (obligatoire). Le propriétaire recevra son argent sous 24h après validation.</span>
                 </p>
             </div>
             <button class="w-full h-14 bg-gradient-to-r from-kama-gold to-yellow-600 hover:shadow-lg hover:shadow-kama-gold/40 text-white font-bold text-lg rounded-xl transition-all">Confirmer le Paiement</button>

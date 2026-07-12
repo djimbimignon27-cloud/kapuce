@@ -1008,3 +1008,103 @@ agent_communication:
   - agent: "testing"
     message: "🎉 TESTS COMPLETS SCÉNARIO A-G TERMINÉS - 100% RÉUSSITE (45/45 tests). TOUS LES FLUX MÉTIER FONCTIONNENT PARFAITEMENT sur http://localhost:8080. A. FLUX MÉTIER DE BASE (7/7 ✅): inscription CLIENT/OWNER → 302, création annonce PENDING, admin approuve → ACTIVE, demande visite PENDING, acceptation → ACCEPTED + conversation créée (ID vérifié en base: 2e9104ac-a95d-43f1-bc6a-6faeea8be9bf), messagerie anti-fraude avec '066 11 22 33' → [NUMÉRO MASQUÉ] + alerte fraude créée (status=PENDING, alert_type=PHONE_NUMBER, severity=HIGH). B. NOUVELLE PAGE ALERTES FRAUDE (4/4 ✅): GET /admin/alerts.php affiche 4 compteurs (En attente/Examinées/Ignorées/Actions prises) + alertes avec contenu original, POST action=review → REVIEWED, POST action=dismiss → DISMISSED, POST action=ban_user → ACTION_TAKEN + utilisateur banni (login bloqué avec message 'suspendu'), débannir via /admin/users.php action=unban fonctionnel. C. MODIFICATION DE COMMISSION (4/4 ✅): Client start_payment + POST /pay.php method=AIRTEL_MONEY payment_reference=TXN111222333 → PAID, Admin POST /admin/transactions.php action=update_commission commission_rate=10 admin_notes='Remise négociée' → commission_rate_owner=10.00, commission_owner=100000, seller_receives=900000, commission_modified=1 en base, GET /admin/transactions.php affiche badge '⚙️ Modifié par admin' + note, Admin action=complete → COMPLETED + annonce SOLD. D. PROFIL UTILISATEUR (4/4 ✅): GET /dashboard/profile.php → 200 avec formulaire, POST form=profile (full_name, phone, city, address, bio) → 302 + valeurs en base, POST form=password (current_password, new_password, confirm_password) → 302 + login avec nouveau mot de passe OK + ancien échoue, POST form=password avec current_password incorrect → erreur affichée. E. PARAMÈTRES UTILISATEUR (2/2 ✅): GET /dashboard/settings.php → 200 avec toggles, POST (email_notifications=on, message_alerts=on) → 302 + notification_prefs en base avec email_notifications:true et sms_notifications:false. F. VÉRIFICATION GLOBALE ADMIN (12/12 ✅): toutes pages admin (/admin/index.php, /admin/users.php, /admin/listings.php, /admin/alerts.php, /admin/messages.php, /admin/transactions.php, /admin/reviews.php, /admin/settings.php) → 200 sans erreur PHP, POST /admin/settings.php commission_client=8 commission_owner=6 → 302 + valeurs en base (vérifié: 8.00 et 6.00), remise à 7/7 fonctionnelle, recherche /admin/users.php?q=client fonctionne, sécurité: GET /admin sans session → 302 /admin/login.php, utilisateur normal → 302 si accès admin. G. PAGES PUBLIQUES/UTILISATEUR (12/12 ✅): toutes pages (/, /listings.php, /listing.php?id=X, /favorites.php, /messages.php, /dashboard/index.php, /dashboard/my-listings.php, /dashboard/my-visits.php, /dashboard/visit-requests.php, /dashboard/transactions.php, /dashboard/create-listing.php) → 200 sans erreur PHP, POST /review.php?tx=TX_ID rating=5 comment='Excellent propriétaire' → 302 + avis en base + affiché sur /listing.php. NOTE: Tests automatisés 7-11 ont échoué dans le script (regex conversation_id) mais MANUELLEMENT VÉRIFIÉS 100% FONCTIONNELS. Test 30 a échoué dans le script (mauvaise structure DB) mais MANUELLEMENT VÉRIFIÉ 100% FONCTIONNEL. AUCUN BUG CRITIQUE. Application PHP KAPUCE.G 100% FONCTIONNELLE et prête pour production LWS."
 
+
+# --- MISE À JOUR : Messagerie avec images (captures d'écran) + contact support KAPUCE ---
+php_backend_update_4:
+  - task: "PHP - Admin contacte n'importe quel compte (admin/users.php action=contact) + admin exempté du filtre anti-fraude"
+    implemented: true
+    working: "NA"
+    needs_retesting: true
+  - task: "PHP - Contacter KAPUCE (contact-support.php : conversation support auto-créée avec message de bienvenue)"
+    implemented: true
+    working: "NA"
+    needs_retesting: true
+  - task: "PHP - Envoi d'images dans la messagerie (api/messages.php POST multipart avec champ 'image' -> Cloudinary, colonne messages.image_url)"
+    implemented: true
+    working: "NA"
+    needs_retesting: true
+  - task: "PHP - Flux paiement structuré (pay.php redirige vers conversation support avec demande de capture d'écran + notification admin PAYMENT_PROOF)"
+    implemented: true
+    working: "NA"
+    needs_retesting: true
+
+agent_communication:
+  - agent: "main"
+    message: "Nouveau flux : après POST /pay.php le client est redirigé vers /messages.php?c=CONV_SUPPORT (conversation avec le SUPER_ADMIN) où un message système demande la capture d'écran. L'API messages accepte maintenant multipart/form-data (conversation_id, content optionnel, image) et upload sur Cloudinary. L'admin peut contacter tout utilisateur (POST /admin/users.php action=contact → redirection /messages.php?c=X). Les messages des admins ne sont PAS filtrés par l'anti-fraude."
+
+
+test_plan:
+  current_focus:
+    - "PHP - Admin contacte n'importe quel compte"
+    - "PHP - Contacter KAPUCE"
+    - "PHP - Envoi d'images dans la messagerie"
+    - "PHP - Flux paiement structuré"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+php_backend_update_4:
+  - task: "PHP - Admin contacte n'importe quel compte (admin/users.php action=contact) + admin exempté du filtre anti-fraude"
+    implemented: true
+    working: true
+    file: "/app/kapuce-php/admin/users.php"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "L'admin peut contacter tout utilisateur (POST /admin/users.php action=contact → redirection /messages.php?c=X). Les messages des admins ne sont PAS filtrés par l'anti-fraude."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTS RÉUSSIS (100%). TEST 10: Admin POST /admin/users.php (csrf, user_id=OWNER_ID, action=contact) → 302 vers /messages.php?c=CONV_ID. Conversation admin↔propriétaire créée (ID vérifié en base: 8da68e9c-a3dd-40f9-821e-51bc14c2c7cb). Notification ADMIN_CONTACT créée pour le propriétaire (type=ADMIN_CONTACT, title='📩 Message de l\'équipe KAPUCE.G', message='L\'administration KAPUCE.G souhaite échanger avec vous. Consultez votre messagerie.', link='/messages.php?c=CONV_ID'). TEST 11: Admin envoie message avec numéro '077347262' via POST /api/messages.php → is_filtered=0 (NON filtré), contenu intact en base avec numéro visible. EXEMPTION ADMIN FONCTIONNELLE (code vérifié lignes 220-235 functions.php: rôles ADMIN/SUPER_ADMIN/ADMIN_MODERATOR/ADMIN_FINANCE exemptés du filtrage). TEST 12: Propriétaire répond avec numéro '066 44 55 66' → is_filtered=1, content='D\'accord, voici mon numéro pour vous joindre: [NUMÉRO MASQUÉ]', alerte fraude créée (alert_type=PHONE_NUMBER, severity=HIGH). Filtrage anti-fraude actif pour non-admins."
+  
+  - task: "PHP - Contacter KAPUCE (contact-support.php : conversation support auto-créée avec message de bienvenue)"
+    implemented: true
+    working: true
+    file: "/app/kapuce-php/contact-support.php"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "GET /contact-support.php crée ou récupère la conversation entre l'utilisateur et le SUPER_ADMIN, puis redirige vers /messages.php?c=CONV_ID. Message de bienvenue système automatique mentionnant les numéros Airtel (077347262) et Moov (065216069)."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTS RÉUSSIS (100%). TEST 7: Client GET /contact-support.php → 302 vers /messages.php?c=CONV_ID. Conversation créée entre client et SUPER_ADMIN (vérifié en base: participant1_id=CLIENT, participant2_id=SUPER_ADMIN). Message de bienvenue système présent avec contenu: '👋 Bienvenue sur le support KAPUCE.G ! Écrivez-nous ici pour toute question. C'est également ici que vous devez envoyer la CAPTURE D'ÉCRAN de vos paiements Mobile Money (Airtel : 077347262 / Moov : 065216069) pour validation de vos transactions.' (is_system=1). TEST 8: Re-GET /contact-support.php → 302 vers MÊME conversation (pas de doublon créé, ID identique: 0c81a444-e8a2-4beb-b8c5-02602a416f47). TEST 9: Client envoie message texte 'Bonjour j\'ai une question sur le paiement Mobile Money' via POST /api/messages.php → success. Admin GET /api/messages.php?conversation_id=CONV_ID → message visible (échange bidirectionnel OK)."
+  
+  - task: "PHP - Envoi d'images dans la messagerie (api/messages.php POST multipart avec champ 'image' -> Cloudinary, colonne messages.image_url)"
+    implemented: true
+    working: true
+    file: "/app/kapuce-php/api/messages.php"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "L'API messages accepte maintenant multipart/form-data (conversation_id, content optionnel, image) et upload sur Cloudinary. Colonne messages.image_url stocke l'URL Cloudinary."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTS RÉUSSIS (100%). TEST 13: Image PNG 100x100 créée avec succès (/tmp/capture_test.png). TEST 14: Client POST /api/messages.php en multipart/form-data avec files={'image': capture_test.png} et data={'conversation_id': CONV_SUPPORT, 'content': 'Voici ma capture d\'écran de paiement'} → {success: true, image_url: 'https://res.cloudinary.com/dfwkn9hks/image/upload/v1783885253...'}. Vérifié en base: messages.image_url NOT NULL commençant par 'https://res.cloudinary.com'. TEST 15: GET /api/messages.php?conversation_id=CONV_SUPPORT → message retourné contient image_url. TEST 16: Envoi image SEULE sans texte (content='') → success (accepté). TEST 17: POST multipart avec fichier .txt (text/plain) → 400 'Format d\'image non supporté (JPEG, PNG, WEBP)'. Validation MIME type fonctionnelle (code ligne 71-77 api/messages.php: allowed=['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic']). Upload Cloudinary 100% opérationnel."
+  
+  - task: "PHP - Flux paiement structuré (pay.php redirige vers conversation support avec demande de capture d'écran + notification admin PAYMENT_PROOF)"
+    implemented: true
+    working: true
+    file: "/app/kapuce-php/pay.php"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Après POST /pay.php le client est redirigé vers /messages.php?c=CONV_SUPPORT (conversation avec le SUPER_ADMIN) où un message système demande la capture d'écran. Notification PAYMENT_PROOF envoyée à l'admin."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTS RÉUSSIS (100%). TEST 18: Client POST /listing.php?id=LISTING_ID (action=start_payment) → 302 vers /pay.php?id=TX_ID. Transaction créée avec status PENDING_PAYMENT. TEST 19: GET /pay.php?id=TX_ID → page contient '3 étapes' et 'capture d\'écran' (vérifié dans HTML). TEST 20: POST /pay.php?id=TX_ID (csrf, method=MOOV_MONEY, payment_reference=TXN555666777, comment='Paiement effectué via Moov Money') → 302 vers /messages.php?c=CONV_SUPPORT (et NON vers /dashboard/transactions.php). Vérifié en base: (1) transaction status=PAID, payment_reference=TXN555666777, (2) message système dans conversation support contenant 'DERNIÈRE ÉTAPE' + 'TXN555666777' + 'capture d\'écran' (is_system=1, sender_id=SYSTEM), (3) notification PAYMENT_PROOF créée pour admin (type=PAYMENT_PROOF, title='💳 Paiement déclaré — capture attendue', message='Client Test a déclaré un paiement de 1 070 000 FCFA (réf. TXN555666777). Vérifiez la capture d\'écran dans la messagerie puis validez la transaction.', link='/messages.php?c=CONV_SUPPORT'). TEST 21: Client envoie capture d'écran dans conversation support via POST multipart → success. TEST 22: Admin POST /admin/transactions.php (action=complete) → status COMPLETED, annonce status SOLD. Flux paiement structuré 100% fonctionnel."
+
+agent_communication:
+  - agent: "testing"
+    message: "🎉 TESTS NOUVELLES FONCTIONNALITÉS MESSAGERIE/SUPPORT TERMINÉS - 100% RÉUSSITE (25/25 tests). TOUS LES FLUX FONCTIONNENT PARFAITEMENT sur http://localhost:8080. A. PRÉPARATION (6/6 ✅): inscription CLIENT/OWNER → 302, création annonce PENDING, admin approuve → ACTIVE, demande visite PENDING, acceptation → ACCEPTED + conversation créée (ID: ea1d73d7-cd18-4bd6-b2b9-8fe30ad2c29e avec 1 message système). B. CONTACTER KAPUCE (3/3 ✅): GET /contact-support.php → 302 vers /messages.php?c=CONV_SUPPORT, conversation client↔SUPER_ADMIN créée avec message bienvenue mentionnant numéros 077347262 et 065216069, re-GET → même conversation (pas de doublon), client envoie message texte → visible par admin (échange bidirectionnel OK). C. ADMIN CONTACTE UTILISATEUR (3/3 ✅): Admin POST /admin/users.php action=contact → 302 vers /messages.php?c=CONV_ID, conversation admin↔propriétaire créée + notification ADMIN_CONTACT envoyée, admin envoie message avec numéro '077347262' → NON filtré (is_filtered=0, contenu intact), propriétaire répond avec numéro '066 44 55 66' → filtré ([NUMÉRO MASQUÉ] + alerte fraude PHONE_NUMBER/HIGH). D. ENVOI D'IMAGES (5/5 ✅): image PNG créée, client POST multipart avec image + texte → upload Cloudinary réussi (https://res.cloudinary.com/...), GET messages → image_url présent, envoi image seule sans texte → accepté, envoi fichier .txt → 400 'Format non supporté'. E. FLUX PAIEMENT STRUCTURÉ (5/5 ✅): client start_payment → /pay.php?id=TX, GET /pay.php → page contient '3 étapes' et 'capture d\'écran', POST /pay.php method=MOOV_MONEY payment_reference=TXN555666777 → 302 vers /messages.php?c=CONV_SUPPORT (et NON /dashboard/transactions.php), transaction PAID + message système 'DERNIÈRE ÉTAPE' + notification PAYMENT_PROOF admin créés, client envoie capture → success, admin valide → COMPLETED + annonce SOLD. F. VÉRIFICATIONS FINALES (3/3 ✅): GET /admin/messages.php?conv=CONV_SUPPORT → affiche image Cloudinary (balise img présente), GET /messages.php → contient bouton 'Contacter KAPUCE', toutes pages principales (/, /listings.php, /dashboard/index.php, /admin/index.php) → 200 sans erreur PHP. STATISTIQUES BASE: 17 messages (1 filtré, 6 avec images), 8 notifications (VISIT_REQUEST, VISIT_ACCEPTED, PAYMENT, TX_COMPLETED, ADMIN_CONTACT, PAYMENT_PROOF), 1 alerte fraude (PHONE_NUMBER/HIGH). AUCUN BUG CRITIQUE. Application PHP KAPUCE.G 100% FONCTIONNELLE avec nouvelles fonctionnalités messagerie/support/images."
+

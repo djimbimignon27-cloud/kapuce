@@ -107,6 +107,7 @@ try {
         is_filtered TINYINT(1) DEFAULT 0,
         filter_reason VARCHAR(30) NULL,
         is_system TINYINT(1) DEFAULT 0,
+        image_url VARCHAR(500) NULL,
         read_at DATETIME NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_conv (conversation_id, created_at),
@@ -203,6 +204,7 @@ try {
         "ALTER TABLE users ADD COLUMN bio TEXT NULL",
         "ALTER TABLE users ADD COLUMN notification_prefs TEXT NULL",
         "ALTER TABLE transactions ADD COLUMN commission_modified TINYINT(1) DEFAULT 0",
+        "ALTER TABLE messages ADD COLUMN image_url VARCHAR(500) NULL",
         "ALTER TABLE fraud_alerts ALTER status SET DEFAULT 'PENDING'",
         "UPDATE fraud_alerts SET status = 'PENDING' WHERE status = 'NEW'",
     ];

@@ -68,6 +68,10 @@ require_once __DIR__ . '/../includes/header.php';
             <h3 class="font-bold text-lg mb-1 text-gray-900">⚙️ Paramètres</h3>
             <p class="text-sm text-gray-500">Gérez vos préférences de notifications.</p>
         </a>
+        <a href="/contact-support.php" class="md:col-span-2 bg-gradient-to-r from-kama-gold to-yellow-600 text-white rounded-xl p-6 hover:shadow-lg hover:shadow-kama-gold/30 transition">
+            <h3 class="font-bold text-lg mb-1">🛟 Contacter KAPUCE.G</h3>
+            <p class="text-sm text-yellow-100">Une question ? Un paiement à justifier (capture d'écran) ? Écrivez directement à notre équipe via la messagerie sécurisée.</p>
+        </a>
     </div>
 </div>
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

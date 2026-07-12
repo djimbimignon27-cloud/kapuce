@@ -168,6 +168,29 @@ function create_fraud_alert($userId, $messageId, $conversationId, $alertType, $s
     $pdo->prepare('UPDATE users SET fraud_risk_level = ? WHERE id = ?')->execute([calculate_risk_level($c), $userId]);
 }
 
+// ID de l'admin support KAPUCE.G (SUPER_ADMIN en priorité)
+function get_support_admin_id() {
+    $id = db()->query("SELECT id FROM users WHERE role = 'SUPER_ADMIN' AND is_banned = 0 ORDER BY created_at ASC LIMIT 1")->fetchColumn();
+    if (!$id) {
+        $id = db()->query("SELECT id FROM users WHERE role IN ('ADMIN','ADMIN_MODERATOR','ADMIN_FINANCE') AND is_banned = 0 ORDER BY created_at ASC LIMIT 1")->fetchColumn();
+    }
+    return $id ?: null;
+}
+
+// Récupère ou crée la conversation Support KAPUCE.G d'un utilisateur
+function get_support_conversation($userId) {
+    $adminId = get_support_admin_id();
+    if (!$adminId || $adminId === $userId) return null;
+    $conv = get_or_create_conversation($userId, $adminId, null, 'Support KAPUCE.G');
+    // Message de bienvenue si conversation vide
+    $count = db()->prepare('SELECT COUNT(*) FROM messages WHERE conversation_id = ?');
+    $count->execute([$conv['id']]);
+    if (!(int)$count->fetchColumn()) {
+        send_message($conv['id'], 'SYSTEM', $userId, "👋 Bienvenue sur le support KAPUCE.G ! Écrivez-nous ici pour toute question. C'est également ici que vous devez envoyer la CAPTURE D'ÉCRAN de vos paiements Mobile Money (Airtel : " . CONTACT_AIRTEL . " / Moov : " . CONTACT_MOOV . ") pour validation de vos transactions.", true);
+    }
+    return $conv;
+}
+
 // Récupère ou crée une conversation entre 2 utilisateurs pour une annonce
 function get_or_create_conversation($user1, $user2, $listingId = null, $listingTitle = null) {
     $pdo = db();
@@ -185,7 +208,7 @@ function get_or_create_conversation($user1, $user2, $listingId = null, $listingT
 }
 
 // Envoie un message (avec filtrage anti-fraude). Retourne le message inséré.
-function send_message($conversationId, $senderId, $receiverId, $content, $isSystem = false, $listingId = null) {
+function send_message($conversationId, $senderId, $receiverId, $content, $isSystem = false, $listingId = null, $imageUrl = null) {
     $pdo = db();
     $msgId = uuid();
     $isFiltered = 0;
@@ -194,21 +217,29 @@ function send_message($conversationId, $senderId, $receiverId, $content, $isSyst
     $finalContent = $content;
 
     if (!$isSystem) {
-        $analysis = analyze_message($content);
-        if ($analysis['is_suspicious']) {
-            $isFiltered = 1;
-            $filterReason = $analysis['alert_type'];
-            $original = $content;
-            $finalContent = $analysis['filtered_content'];
-            create_fraud_alert($senderId, $msgId, $conversationId, $analysis['alert_type'], $analysis['severity'], $content);
+        // Les administrateurs ne sont pas soumis au filtre anti-fraude
+        $roleStmt = $pdo->prepare('SELECT role FROM users WHERE id = ?');
+        $roleStmt->execute([$senderId]);
+        $senderRole = $roleStmt->fetchColumn();
+        $senderIsAdmin = in_array($senderRole, ['ADMIN', 'SUPER_ADMIN', 'ADMIN_MODERATOR', 'ADMIN_FINANCE']);
+
+        if (!$senderIsAdmin) {
+            $analysis = analyze_message($content);
+            if ($analysis['is_suspicious']) {
+                $isFiltered = 1;
+                $filterReason = $analysis['alert_type'];
+                $original = $content;
+                $finalContent = $analysis['filtered_content'];
+                create_fraud_alert($senderId, $msgId, $conversationId, $analysis['alert_type'], $analysis['severity'], $content);
+            }
         }
     }
 
-    $pdo->prepare('INSERT INTO messages (id, conversation_id, sender_id, receiver_id, content, original_content, is_filtered, filter_reason, is_system, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())')
-        ->execute([$msgId, $conversationId, $senderId, $receiverId, $finalContent, $original, $isFiltered, $filterReason, $isSystem ? 1 : 0]);
+    $pdo->prepare('INSERT INTO messages (id, conversation_id, sender_id, receiver_id, content, original_content, is_filtered, filter_reason, is_system, image_url, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())')
+        ->execute([$msgId, $conversationId, $senderId, $receiverId, $finalContent, $original, $isFiltered, $filterReason, $isSystem ? 1 : 0, $imageUrl]);
 
     $pdo->prepare('UPDATE conversations SET last_message = ?, last_sender_id = ?, updated_at = NOW() WHERE id = ?')
-        ->execute([mb_substr($finalContent, 0, 120), $senderId, $conversationId]);
+        ->execute([mb_substr($imageUrl && !$finalContent ? '📷 Photo' : $finalContent, 0, 120), $senderId, $conversationId]);
 
     // Message d'avertissement système si filtré
     if ($isFiltered) {
